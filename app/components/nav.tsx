@@ -40,7 +40,7 @@ export function Navbar() {
           </div>
 
           {/* Animated Sphere (Right Side, Fixed) */}
-          <div className="hidden md:flex items-center justify-center w-[80px] h-[80px] overflow-hidden">
+          <div className="items-center justify-center w-[80px] h-[80px] overflow-hidden">
             <P5Wrapper />
           </div>
         </nav>

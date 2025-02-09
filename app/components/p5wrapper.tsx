@@ -81,7 +81,7 @@ const P5Wrapper = () => {
     };
   }, []);
 
-  return <div ref={sketchRef} className="absolute top-0 right-0 m-4 z-50" />;
+  return <div ref={sketchRef} className="absolute top-0 right-0 m-4 z-0" />;
 };
 
 export default P5Wrapper;
