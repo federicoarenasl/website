@@ -1,6 +1,5 @@
 import { Posts } from 'app/components/posts'
-
-export const PATH_TO_PROJECT_MDX = 'app/projects/projects'
+import { PATH_TO_PROJECT_MDX } from 'app/sitemap'
 
 export const metadata = {
   title: 'Project',

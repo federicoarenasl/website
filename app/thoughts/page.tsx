@@ -1,5 +1,3 @@
-export const PATH_TO_BLOG_MDX = 'app/thoughts/posts'
-
 export const metadata = {
   title: 'Thoughts',
   description: 'Some random access thoughts.',

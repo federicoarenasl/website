@@ -6,7 +6,7 @@ import { CustomMDX } from 'app/components/mdx'
 import { baseUrl } from 'app/sitemap'
 
 import {formatDate, collectMDXData} from 'app/utils'
-import { PATH_TO_PROJECT_MDX } from 'app/projects/page'
+import { PATH_TO_PROJECT_MDX } from 'app/sitemap'
 
 function getProjects() {
   return collectMDXData(PATH_TO_PROJECT_MDX)

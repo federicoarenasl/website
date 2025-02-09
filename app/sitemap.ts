@@ -1,7 +1,8 @@
 import { collectMDXData } from 'app/utils'
 export const baseUrl = 'https://portfolio-blog-starter.vercel.app'
-import { PATH_TO_BLOG_MDX } from 'app/thoughts/page'
-import { PATH_TO_PROJECT_MDX } from 'app/projects/page'
+
+export const PATH_TO_BLOG_MDX = 'app/thoughts/posts'
+export const PATH_TO_PROJECT_MDX = 'app/projects/projects'
 
 export default async function sitemap() {
   let blogs = collectMDXData(PATH_TO_BLOG_MDX).map((post) => ({

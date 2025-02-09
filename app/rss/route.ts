@@ -1,7 +1,6 @@
 import { baseUrl } from 'app/sitemap'
 import { collectMDXData } from 'app/utils'
-import { PATH_TO_BLOG_MDX } from 'app/thoughts/page'
-import { PATH_TO_PROJECT_MDX } from 'app/projects/page'
+import { PATH_TO_BLOG_MDX, PATH_TO_PROJECT_MDX } from 'app/sitemap'
 
 export async function GET() {
   let allBlogs = await collectMDXData(PATH_TO_BLOG_MDX)
