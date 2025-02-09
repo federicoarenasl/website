@@ -1,10 +1,10 @@
 import { baseUrl } from 'app/sitemap'
-import { getBlogPosts } from 'app/blog/utils'
-import { getProjects } from 'app/projects/utils'
+import { collectMDXData } from 'app/utils'
+import { PATH_TO_BLOG_MDX, PATH_TO_PROJECT_MDX } from 'app/sitemap'
 
 export async function GET() {
-  let allBlogs = await getBlogPosts()
-  let allProjects = await getProjects()
+  let allBlogs = await collectMDXData(PATH_TO_BLOG_MDX)
+  let allProjects = await collectMDXData(PATH_TO_PROJECT_MDX)
 
   const blogItemsXml = allBlogs
     .sort((a, b) => {
@@ -17,7 +17,7 @@ export async function GET() {
       (post) =>
         `<item>
           <title>${post.metadata.title}</title>
-          <link>${baseUrl}/blog/${post.slug}</link>
+          <link>${baseUrl}/thoughts/${post.slug}</link>
           <description>${post.metadata.summary || ''}</description>
           <pubDate>${new Date(
             post.metadata.publishedAt
@@ -49,7 +49,7 @@ export async function GET() {
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
   <rss version="2.0">
     <channel>
-        <title>My Portfolio</title>
+        <title>Federico Arenas</title>
         <link>${baseUrl}</link>
         <description>This is my portfolio RSS feed</description>
         ${blogItemsXml}

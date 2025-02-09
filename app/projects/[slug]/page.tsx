@@ -5,8 +5,12 @@ import { CustomMDX } from 'app/components/mdx'
 // or we can create a shared function to generate metadata for both.
 import { baseUrl } from 'app/sitemap'
 
-import {formatDate, getProjects} from 'app/projects/utils'
+import {formatDate, collectMDXData} from 'app/utils'
+import { PATH_TO_PROJECT_MDX } from 'app/sitemap'
 
+function getProjects() {
+  return collectMDXData(PATH_TO_PROJECT_MDX)
+}
 
 export async function generateStaticParams() {
   let projects = getProjects()
