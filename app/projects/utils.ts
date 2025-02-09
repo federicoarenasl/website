@@ -48,7 +48,7 @@ function getMDXData(dir) {
     }
   })
 }
-//NOTE: This function is a duplicate of the one in app/blog/utils.ts
+//NOTE: This function is a duplicate of the one in app/thoughts/utils.ts
 export function getProjects() {
   return getMDXData(path.join(process.cwd(), 'app', 'projects', 'projects'))
 }
