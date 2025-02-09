@@ -26,9 +26,6 @@ function parseFrontmatter(fileContent: string) {
   return { metadata: metadata as Metadata, content }
 }
 
-function getMDXFiles(dir) {
-  return fs.readdirSync(dir).filter((file) => path.extname(file) === '.mdx')
-}
 
 export function readMDXFile(filePath) {
   let rawContent = fs.readFileSync(filePath, 'utf-8')

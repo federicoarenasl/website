@@ -1,8 +1,11 @@
 import Link from 'next/link'
-import { formatDate, getProjects } from 'app/projects/utils'
+import { formatDate, collectMDXData } from 'app/utils'
+
+
+export const PATH_TO_PROJECT_MDX = 'app/projects/projects'
 
 export function Projects() {
-  let allProjects = getProjects()
+  let allProjects = collectMDXData(PATH_TO_PROJECT_MDX)
 
   return (
     <div>

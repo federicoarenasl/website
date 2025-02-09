@@ -1,4 +1,4 @@
-import { readMDXFile } from 'app/cv/utils'
+import { readMDXFile } from 'app/utils'
 import { CustomMDX } from 'app/components/mdx'
 import path from 'path'
 export const metadata = {
@@ -8,7 +8,6 @@ export const metadata = {
 
 export default function Page() {
   let {metadata, content} = readMDXFile(path.join(process.cwd(), 'app', 'cv', 'cv.mdx'))
-
 
   return (
     <section>

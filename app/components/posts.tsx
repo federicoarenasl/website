@@ -1,8 +1,10 @@
 import Link from 'next/link'
-import { formatDate, getBlogPosts } from 'app/thoughts/utils'
+import { formatDate, collectMDXData } from 'app/utils'
+
+export const PATH_TO_BLOG_MDX = 'app/thoughts/posts'
 
 export function BlogPosts() {
-  let allBlogs = getBlogPosts()
+  let allBlogs = collectMDXData(PATH_TO_BLOG_MDX)
 
   return (
     <div>
