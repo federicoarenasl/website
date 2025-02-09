@@ -1,10 +1,11 @@
 import { baseUrl } from 'app/sitemap'
-import { getBlogPosts } from 'app/thoughts/utils'
-import { getProjects } from 'app/projects/utils'
+import { collectMDXData } from 'app/utils'
+import { PATH_TO_BLOG_MDX } from 'app/thoughts/page'
+import { PATH_TO_PROJECT_MDX } from 'app/projects/page'
 
 export async function GET() {
-  let allBlogs = await getBlogPosts()
-  let allProjects = await getProjects()
+  let allBlogs = await collectMDXData(PATH_TO_BLOG_MDX)
+  let allProjects = await collectMDXData(PATH_TO_PROJECT_MDX)
 
   const blogItemsXml = allBlogs
     .sort((a, b) => {
