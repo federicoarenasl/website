@@ -148,3 +148,18 @@ table {
 .title {
   text-wrap: balance;
 }
+
+/* White/Black code block override */
+.white-code-block pre {
+  background-color: white !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .white-code-block pre {
+    background-color: black !important;
+    border-color: #374151 !important;
+    color: #f3f4f6 !important;
+  }
+}

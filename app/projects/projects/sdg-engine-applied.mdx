@@ -24,6 +24,13 @@ This dataset is perfect, it contains 4 different classes of objects, set up on a
 
 Let's take a quick look at the dataset:
 
+<Image
+  src="/hb-dataset-sample.gif"
+  alt="Sample from the Homebrew BOP dataset showing 4 different objects on a rotating platform"
+  width={480}
+  height={315}
+/>
+
 
 To read more about the dataset, I recommend going into the source paper, as well as visiting the wider BOP website, which hosts Computer Vision datasets for all kinds of things.
 
@@ -46,16 +53,98 @@ While we could just go on about this alone (and the new ideas out there for worl
 While we could just go on about this alone (and the new ideas out there for world models [4]). This tutorial focuses on a practical embodiment of synthetic data for Computer Vision, specifically using Blender as a source of data for training DEtection TRansformer (DETR) to perform real-world object detection task.
 
 ### Loading the datasets
+While we could just go on about this alone (and the new ideas out there for world models [4]). This tutorial focuses on a practical embodiment of synthetic data for Computer Vision, specifically using Blender as a source of data for training DEtection TRansformer (DETR) to perform real-world object detection task.
 ```python
 from datasets import load_dataset
 
 # Load the synthetic dataset as your train_dataset
-synthetic_dataset = load_dataset("federicoarenas-ai/synthetic-bop-homebrew-scene-3-medium", token=os.environ['HF_TOKEN'])
+synthetic_dataset = load_dataset(
+    "federicoarenas-ai/synthetic-bop-homebrew-scene-3-medium", 
+    token=os.environ['HF_TOKEN']
+    )
 train_dataset = synthetic_dataset['train']
+```
 
+
+While we could just go on about this alone (and the new ideas out there for world models [4]). This tutorial focuses on a practical embodiment of synthetic data for Computer Vision, specifically using Blender as a source of data for training DEtection TRansformer (DETR) to perform real-world object detection task.
+```python
 # Load the real dataset as your test_dataset
-real_dataset = load_dataset("federicoarenas-ai/real-bop-homebrew-scene-3", token=os.environ['HF_TOKEN'])
+real_dataset = load_dataset(
+    "federicoarenas-ai/real-bop-homebrew-scene-3", 
+    token=os.environ['HF_TOKEN']
+    )
 test_dataset = real_dataset['validation']
+```
+
+While we could just go on about this alone (and the new ideas out there for world models [4]). This tutorial focuses on a practical embodiment of synthetic data for Computer Vision, specifically using Blender as a source of data for training DEtection TRansformer (DETR) to perform real-world object detection task.
+
+```python
+import albumentations as A
+
+# Our train augmentations should improve our classifiers robustness
+train_transform = A.Compose(
+    [
+        A.LongestMaxSize(500),
+        A.PadIfNeeded(500, 500, border_mode=0, value=(0, 0, 0)),
+        A.HorizontalFlip(p=0.5),
+        A.RandomBrightnessContrast(p=0.5),
+        A.HueSaturationValue(p=0.5),
+        A.Rotate(limit=10, p=0.5),
+        A.RandomScale(scale_limit=0.2, p=0.5),
+        A.GaussianBlur(p=0.5),
+        A.GaussNoise(p=0.5),
+    ],
+    bbox_params=A.BboxParams(format="coco", label_fields=["categories"]),
+)
+```
+While we could just go on about this alone (and the new ideas out there for world models [4]). This tutorial focuses on a practical embodiment of synthetic data for Computer Vision, specifically using Blender as a source of data for training DEtection TRansformer (DETR) to perform real-world object detection task.
+```python
+# Our validation augmentations should not tamper with 
+# the final distribution we want to test on
+test_transform = A.Compose(
+    [
+        A.LongestMaxSize(500),
+        A.PadIfNeeded(500, 500, border_mode=0, value=(0, 0, 0)),
+    ],
+    bbox_params=A.BboxParams(format="coco", label_fields=["categories"]),
+)
+```
+
+
+While we could just go on about this alone (and the new ideas out there for world models [4]). This tutorial focuses on a practical embodiment of synthetic data for Computer Vision, specifically using Blender as a source of data for training DEtection TRansformer (DETR) to perform real-world object detection task.
+```
+from transformers import DetrForObjectDetection, TrainingArguments
+import datetime
+
+# Prepare training run hyperparameters
+RUN_IDENTIFIER = f"vit-training-run-{datetime.datetime.now().strftime('%Y-%m-%d')}"
+UNIQUE_RUN_IDENTIFIER = f"vit-training-run-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+
+# Prepare model
+model = DetrForObjectDetection.from_pretrained(
+    checkpoint,
+    id2label=ID_TO_LABEL,
+    label2id=LABEL_TO_ID,
+    ignore_mismatched_sizes=True,
+)
+
+# Define the training arguments
+training_args = TrainingArguments(
+    output_dir=UNIQUE_RUN_IDENTIFIER,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    max_steps=10000,
+    save_steps=10,
+    logging_steps=1,
+    learning_rate=1e-5,
+    weight_decay=1e-4,
+    save_total_limit=2,
+    remove_unused_columns=False,
+    eval_steps=100,
+    eval_strategy="steps",
+    report_to="wandb",
+    batch_eval_metrics=True,
+)
 ```
 
 ## v. What did we learn today?
