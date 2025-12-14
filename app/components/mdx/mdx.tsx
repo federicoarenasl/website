@@ -100,21 +100,58 @@ function CustomLink(props) {
 /**
  * Image component with rounded corners, border, and optional caption
  * Centers the image and displays the alt text as a caption below
+ * Uses object-fit: contain to prevent cropping when aspect ratios don't match
  * @param {Object} props - Image props including alt, src, width, height, etc.
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
+  const { width, height, alt, ...restProps } = props
+  
+  // If width and height are provided, use a container with aspect ratio
+  // Otherwise, use responsive sizing
+  if (width && height) {
+    return (
+      <div className="flex flex-col items-center my-6">
+        <div 
+          className="relative rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+          style={{ 
+            width: '100%', 
+            maxWidth: `${width}px`,
+            aspectRatio: `${width} / ${height}`
+          }}
+        >
+          <Image 
+            alt={alt || ''} 
+            fill
+            style={{ objectFit: 'contain' }}
+            sizes={`(max-width: ${width}px) 100vw, ${width}px`}
+            {...restProps} 
+          />
+        </div>
+        {/* Display alt text as caption if provided */}
+        {alt && (
+          <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
+            {alt}
+          </p>
+        )}
+      </div>
+    )
+  }
+  
+  // Fallback for images without explicit dimensions
   return (
     <div className="flex flex-col items-center my-6">
       <Image 
-        alt={props.alt} 
+        alt={alt || ''} 
         className="rounded-lg border border-gray-300 dark:border-gray-600" 
-        {...props} 
+        width={width}
+        height={height}
+        {...restProps} 
       />
       {/* Display alt text as caption if provided */}
-      {props.alt && (
+      {alt && (
         <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
-          {props.alt}
+          {alt}
         </p>
       )}
     </div>
