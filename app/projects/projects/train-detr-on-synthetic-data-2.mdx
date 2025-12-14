@@ -1,34 +1,38 @@
 ---
-title: 'Train a Vision Transformer on Synthetic Data, Part 2: Train and Evaluate your model.'
+title: 'Fine-tune a Vision Transformer on Synthetic Data, Part 2: Fine-tune and Evaluate your model.'
 publishedAt: '2025-12-14'
 summary: 'Explore the enduring debate between using spaces and tabs for code indentation, and why this choice matters more than you might think.'
 ---
 
-_This is an updated version of the blog I made years ago on generating synthetic data with Blender to train a YOLO model, if you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
+_This is an updated version of the blog I made years ago on generating synthetic data with Blender to fine-tune a YOLO model. If you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
 
 _This section of the tutorial is currently under development. Thank you for your patience as I work to make it even better!_
 
-### A quick intro
+### Introduction
 
-This tutorial will walk you through how to train a Vision Transformer using your own synthetic data for object detection. We'll use Blender to generate the data, and train a DEtection TRansformer (DETR) model with help from my minimal package, `sdg-engine`. The training and validation will be done with the HuggingFace `transformers` and `datasets` libraries, using real validation data from the open source "BOP: Benchmark for 6D Object Pose Estimation" [1].
+This tutorial will walk you through fine-tuning a Vision Transformer on synthetic data to perform object detection.
+
+We'll use the [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package to generate the data with Blender, fine-tune a DEtection TRansformer (DETR) model using the HuggingFace 🤗 `transformers` and `datasets` libraries, and validate its performance against one of the open source _"BOP: Benchmark for 6D Object Pose Estimation"_ benchmark datasets [1].
 
 This tutorial is divided in two parts:
-1. [**Part 1: Generate data using Blender**](/projects/train-detr-on-synthetic-data-1): this part focuses on setting up your Blender scene, your `sdg-package`, generating your training data, and pushing your `train` and `validation` datasets into the HuggingFace Hub.
-2. [**Part 2: Train DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2): this part focuses on taking your `train`, and `validation` datasets and training DETR  using the HuggingFace `transformers` library.
+1. [**Part 1: Generate data using Blender**](/projects/train-detr-on-synthetic-data-1): this part focuses on setting up your Blender scene, your `sdg-package`, generating your fine-tuning data, and pushing your `train` and `validation` datasets into the HuggingFace Hub.
+2. [**Part 2: Fine-tune DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2): this part focuses on taking your `train`, and `validation` datasets and fine-tuning DETR using the HuggingFace `transformers` library.
+
+By the end of this tutorial, you'll have created a synthetic dataset using Blender, fine-tuned a Vision Transformer on it, and evaluated its performance on an open source dataset — all with HuggingFace 🤗.
 
 If you have any questions or comments regarding these tutorials, please let me know at [github.com/federicoarenasl/sdg-engine/issues](https://github.com/federicoarenasl/sdg-engine/issues).
 
 Let's dive right in!
 
 ## Prerequisites
-Before we start, you'll need an NVIDIA or Apple Silicon GPU in order to train DETR.
+Before we start, you'll need an NVIDIA or Apple Silicon GPU in order to fine-tune DETR.
 
 The full tutorial can be run from the following notebook (INSERT LINK), which you can run from a GPU-enabled Google Colab notebook, or from your own GPU-enabled machine.
 
 ## i. The BOP Homebrew Dataset
 To keep things reproducible, we'll use an open source dataset as our ground truth for evaluation. I've picked the Homebrew dataset from the widely known Benchmark for 6D Object Pose Estimation (BOP). 
 
-The Homebrew dataset has a multitude of scenes with different objects rotating on a platform, and for simplicity we'll train our model to detect objects in only one of their scenes -- scene No. 3 -- shown below:
+The Homebrew dataset has a multitude of scenes with different objects rotating on a platform, and for simplicity we'll fine-tune our model to detect objects in only one of their scenes -- scene No. 3 -- shown below:
 
 <Image
   src="/hb-dataset-sample.gif"
@@ -42,8 +46,8 @@ This scene contains 4 different objects, set up on a rotating platform under con
 
 If you want to learn more about the BOP benchmark or the Homebrew dataset, click here or here (INSERT LINKS)!
 
-## iv. Train DETR using the `transformers` library
-Now that we have both our evaluation and our training datasets somewhere safely in the HuggingFace Hub, we are ready to use them to train our DEtection TRansformer!
+## iv. Fine-tune DETR using the `transformers` library
+Now that we have both our evaluation and our training datasets somewhere safely in the HuggingFace Hub, we are ready to use them to fine-tune our DEtection TRansformer!
 
 ### Loading the datasets
 Both of our datasets now hopefully live in the HF Hub, so pulling them is super simple, we can load our synthetic dataset as `train_dataset`, from which we'll only use the `'train'` split:
@@ -81,9 +85,9 @@ image_processor = AutoImageProcessor.from_pretrained(checkpoint)
 > **Tip:** By starting from a pretrained checkpoint, our `image_processor` leverages previously learned visual features, allowing the model to focus on adapting to our specific task rather than learning basic image representations from scratch. This typically leads to faster convergence and improved performance.
 
 ### Augment the data
-Data augmentations are a common thing in any ML training pipeline, they let us incentivize generalization in our model via data transformations in the training dataset. We'll prepare these using the albumentations library. This library is awesome, you can `albumentations.Compose` a series of augmentations which will then be applied to each of the datasets.
+Data augmentations are a common thing in any ML fine-tuning pipeline, they let us incentivize generalization in our model via data transformations in the training dataset. We'll prepare these using the albumentations library. This library is awesome, you can `albumentations.Compose` a series of augmentations which will then be applied to each of the datasets.
 
-Let's introduce transformations in our training dataset to make the model more robust to rotational variations, brightness and constrast variations, noise variations, and other variations in the images:
+Let's introduce transformations in our training dataset to make the model more robust to rotational variations, brightness and contrast variations, noise variations, and other variations in the images:
 
 ```python
 import albumentations as A
@@ -164,7 +168,7 @@ train_dataset_transformed = train_dataset.with_transform(transform_train)
 test_dataset_transformed = test_dataset.with_transform(transform_test)
 ```
 
-Awesome! We now have our `train_dataset_transformed` and our `val_dataset_transform` ready to use during training and validation.
+Awesome! We now have our `train_dataset_transformed` and our `val_dataset_transform` ready to use during fine-tuning and validation.
 
 ### Prepare evaluation metrics
 
@@ -248,7 +252,7 @@ def aggregate_and_compute(
 
 ### Prepare the collate function
 
-The collate function combines individual samples into batches for training. It ensures all images are properly padded and formatted:
+The collate function combines individual samples into batches for fine-tuning. It ensures all images are properly padded and formatted:
 
 ```python
 def collate_fn(batch: list[torch.Tensor])-> torch.Tensor:
@@ -267,7 +271,7 @@ def collate_fn(batch: list[torch.Tensor])-> torch.Tensor:
 
 ### Initialize logging using Weights and Biases
 
-To track our training metrics and visualize results, we'll use Weights & Biases. Set up logging with a unique run identifier:
+To track our fine-tuning metrics and visualize results, we'll use Weights & Biases. Set up logging with a unique run identifier:
 
 ```python
 import wandb
@@ -287,9 +291,9 @@ wandb.init(
 )
 ```
 
-### Initialize the model and training configuration
+### Initialize the model and fine-tuning configuration
 
-With our datasets prepared and evaluation metrics configured, we can now initialize the DETR model and set up the training parameters.
+With our datasets prepared and evaluation metrics configured, we can now initialize the DETR model and set up the fine-tuning parameters.
 
 First, load the pretrained DETR model and configure it for our specific object classes:
 
@@ -306,7 +310,7 @@ model = DetrForObjectDetection.from_pretrained(
 )
 ```
 
-Next, define the training hyperparameters. These values control the learning process, batch sizes, evaluation frequency, and logging:
+Next, define the fine-tuning hyperparameters. These values control the learning process, batch sizes, evaluation frequency, and logging:
 
 ```python
 # Define the training arguments
@@ -328,7 +332,7 @@ training_args = TrainingArguments(
 )
 ```
 
-Now create the `Trainer` object that orchestrates the training loop, combining the model, datasets, and configuration:
+Now create the `Trainer` object that orchestrates the fine-tuning loop, combining the model, datasets, and configuration:
 
 ```python
 from transformers import Trainer
@@ -344,22 +348,22 @@ trainer = Trainer(
 )
 ```
 
-Finally, start the training process:
+Finally, start the fine-tuning process:
 
 ```python
 trainer.train()
 ```
 
-The model will train for 10,000 steps, evaluating on the real-world validation set every 100 steps and logging metrics to Weights & Biases.
+The model will be fine-tuned for 10,000 steps, evaluating on the real-world validation set every 100 steps and logging metrics to Weights & Biases.
 
-#### iv-4. Training run
-After running the training for 10,000 steps, we can observe the model's learning progression through several key metrics.
+#### iv-4. Fine-tuning run
+After running the fine-tuning for 10,000 steps, we can observe the model's learning progression through several key metrics.
 
-The training loss shows a steady decline throughout the training process, indicating that the model is effectively learning from the synthetic data:
+The fine-tuning loss shows a steady decline throughout the process, indicating that the model is effectively adapting from the synthetic data:
 
 <Image
   src="/train_loss.svg"
-  alt="Training loss curve showing steady decline over 10,000 steps"
+  alt="Fine-tuning loss curve showing steady decline over 10,000 steps"
   width={500}
   height={315}
 />
@@ -373,20 +377,20 @@ The evaluation loss on the real-world Homebrew dataset also decreases, suggestin
   height={315}
 />
 
-The mean Average Precision (mAP) metric steadily improves during training, demonstrating that the model's detection accuracy is increasing:
+The mean Average Precision (mAP) metric steadily improves during fine-tuning, demonstrating that the model's detection accuracy is increasing:
 
 <Image
   src="/eval_map.svg"
-  alt="Mean Average Precision (mAP) metric progression during training"
+  alt="Mean Average Precision (mAP) metric progression during fine-tuning"
   width={500}
   height={315}
 />
 
-Here's a demonstration of the trained model detecting objects in the real-world Homebrew dataset:
+Here's a demonstration of the fine-tuned model detecting objects in the real-world Homebrew dataset:
 
 <Image
   src="/trained_demo.gif"
-  alt="Trained DETR model detecting objects in the Homebrew dataset"
+  alt="Fine-tuned DETR model detecting objects in the Homebrew dataset"
   width={500}
   height={315}
 />
@@ -394,9 +398,9 @@ Here's a demonstration of the trained model detecting objects in the real-world 
 
 ## v. What did we learn today?
 
-In this tutorial, we successfully trained a DETR model using entirely synthetic data generated from Blender and evaluated it on real-world images from the BOP Homebrew dataset. The key takeaways include:
+In this tutorial, we successfully fine-tuned a DETR model using entirely synthetic data generated from Blender and evaluated it on real-world images from the BOP Homebrew dataset. The key takeaways include:
 
-- **Synthetic-to-real transfer is feasible**: Models trained on synthetic data can generalize to real-world scenarios when the synthetic data captures sufficient visual diversity.
+- **Synthetic-to-real transfer is feasible**: Models fine-tuned on synthetic data can generalize to real-world scenarios when the synthetic data captures sufficient visual diversity.
 - **Data augmentation matters**: Applying transformations like rotation, brightness adjustments, and noise helps bridge the gap between synthetic and real domains.
 - **Proper evaluation is critical**: Using established metrics like mAP and evaluating on held-out real-world data ensures the model is learning meaningful features rather than memorizing synthetic artifacts.
 - **Blender as a data generator**: With the right setup, Blender can serve as a powerful tool for generating labeled training data, especially for scenarios where real-world data collection is expensive or impractical.
@@ -408,6 +412,6 @@ There are several directions you can explore to build upon this tutorial:
 - **Experiment with domain randomization**: Add more variability to lighting, backgrounds, and object textures in your Blender scenes to improve generalization.
 - **Try different architectures**: Test other object detection models like YOLOv8, Faster R-CNN, or newer vision transformers to compare performance.
 - **Increase dataset size**: Generate more synthetic samples to see how model performance scales with data quantity.
-- **Fine-tune on real data**: Use the synthetic-trained model as a starting point and fine-tune it with a small amount of real-world labeled data.
+- **Fine-tune on real data**: Use the synthetic-fine-tuned model as a starting point and fine-tune it with a small amount of real-world labeled data.
 - **Explore other BOP scenes**: Apply the same pipeline to other scenes or datasets in the BOP benchmark to test generalization across different object sets.
 - **Implement domain adaptation**: Look into techniques like adversarial training or style transfer to further reduce the synthetic-to-real domain gap.

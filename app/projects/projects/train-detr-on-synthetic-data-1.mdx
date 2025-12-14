@@ -1,18 +1,22 @@
 ---
-title: 'Train a Vision Transformer on Synthetic Data, Part 1: Generate the data using Blender.'
+title: 'Fine-tune a Vision Transformer on Synthetic Data, Part 1: Generate the training data using Blender.'
 publishedAt: '2025-12-14'
 summary: 'Explore the enduring debate between using spaces and tabs for code indentation, and why this choice matters more than you might think.'
 ---
 
-_This is an updated version of the blog I made years ago on generating synthetic data with Blender to train a YOLO model, if you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
+_This is an updated version of the blog I made years ago on generating synthetic data with Blender to fine-tune a YOLO model, if you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
 
 ## Introduction
 
-This tutorial will walk you through how to train a Vision Transformer using your own synthetic data for object detection. We'll use Blender to generate the data, and train a DEtection TRansformer (DETR) model with help from my minimal package, `sdg-engine`. The training and validation will be done with the HuggingFace `transformers` and `datasets` libraries, using real validation data from the open source "BOP: Benchmark for 6D Object Pose Estimation" [1].
+This tutorial will walk you through fine-tuning a Vision Transformer on synthetic data to perform object detection.
+
+We'll use the [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package to generate the data with Blender, fine-tune a DEtection TRansformer (DETR) model  using the HuggingFace 🤗 `transformers` and `datasets` libraries, and validate its performance against one of the open source _"BOP: Benchmark for 6D Object Pose Estimation"_ benchmark datasets [1].
 
 This tutorial is divided in two parts:
-1. [**Part 1: Generate data using Blender**](/projects/train-detr-on-synthetic-data-1): this part focuses on setting up your Blender scene, your `sdg-package`, generating your training data, and pushing your `train` and `validation` datasets into the HuggingFace Hub.
-2. [**Part 2: Train DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2): this part focuses on taking your `train`, and `validation` datasets and training DETR  using the HuggingFace `transformers` library.
+1. [**Part 1: Generate data using Blender**](/projects/train-detr-on-synthetic-data-1): this part focuses on setting up your Blender scene, your `sdg-package`, generating your fine-tuning data, and pushing your `train` and `validation` datasets into the HuggingFace Hub.
+2. [**Part 2: Fine-tune DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2): this part focuses on taking your `train`, and `validation` datasets and fine-tuning DETR using the HuggingFace `transformers` library.
+
+By the end of this tutorial, you'll have created a synthetic dataset using Blender, trained a Vision Transformer on it, and evaluated its performance on an open source dataset — all with HuggingFace 🤗.
 
 If you have any questions or comments regarding these tutorials, please let me know at [github.com/federicoarenasl/sdg-engine/issues](https://github.com/federicoarenasl/sdg-engine/issues).
 
@@ -21,7 +25,6 @@ Let's dive right in!
 #### Prerequisites
 Before getting started with this part of the tutorial, please make sure you have the following software installed:
 1. Blender, you can follow the steps [here](https://www.blender.org/download/) to install Blender on your computer.
-
 2. The [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package as well as its ML dependencies (hence the `--with=torch` flag), which you can do with the following commands:
 
 ```bash
@@ -33,7 +36,9 @@ poetry install --with=torch
 > Using the flag `--with=torch` will prepare us to run the second part of this tutorial.
 
 #### The BOP Homebrew Dataset
-The BOP benchmark has a multitude of diverse datasets. Given that our task is focused on object detection, I've picked the "HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects" dataset [2]. This dataset has a multitude of scenes with different objects rotating on a platform, and for simplicity we'll train our model to detect objects in only one of their scenes -- scene No. 3 -- shown below:
+The BOP benchmark has a multitude of diverse datasets. Given that our task is focused on object detection, I've picked the _"HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects"_ dataset [2]. 
+
+This dataset has a multitude of scenes with different objects rotating on a platform, and for simplicity we'll fine-tune our model to detect objects in only one of their scenes — scene No. 3 — shown below:
 
 <Image
   src="/hb-dataset-sample.gif"
@@ -42,11 +47,11 @@ The BOP benchmark has a multitude of diverse datasets. Given that our task is fo
   height={315}
 />
 
-> TIP: As the dataset name suggests, it was created for more than just object detection. However, its structure is very well suited for evaluating our own models trained for straightforward object detection tasks.
+> TIP: As the dataset name suggests, it was created for more than just object detection. However, its structure is very well suited for evaluating our own models fine-tuned for straightforward object detection tasks.
 
 
 ## Prepare your validation dataset
-The core benefit of using the Homebrew dataset in this tutorial is that it provides real-world ground truth that can be used for validating our model that was trained on synthetic data. Without an already labelled real-world dataset, we wouldn't be able to really measure our model's performance in the real-world.
+The core benefit of using the Homebrew dataset in this tutorial is that it provides real-world ground truth that can be used for validating our model that was fine-tuned on synthetic data. Without an already labelled real-world dataset, we wouldn't be able to really measure our model's performance in the real world.
 
 Let's prepare our validation dataset.
 
@@ -103,7 +108,7 @@ class FormattedLabel(BaseModel):
     objects: Objects
 ```
 
-Now well move our validation images into the `IMAGEFOLDER_PATH`, and collect the labels into a list of `FormattedLabel`s.
+Now we'll move our validation images into the `IMAGEFOLDER_PATH`, and collect the labels into a list of `FormattedLabel`s.
 
 ```python
 from pathlib import Path
@@ -167,7 +172,7 @@ for src in sorted(p for p in RGB_DIR.iterdir() if p.is_file()):
     )
     formatted_labels.append(label)
 ```
-Finally, go throught the `formatted_labels` and save each as a line into `metadata.jsonl` file, necessary for the `imagefolder` to locate each image's annotations:
+Finally, go through the `formatted_labels` and save each as a line into `metadata.jsonl` file, necessary for the `imagefolder` to locate each image's annotations:
 ```python
 meta_path = OUT_DIR / "metadata.jsonl"
 with meta_path.open("w") as f:
@@ -195,10 +200,10 @@ val_dataset.push_to_hub(
 > **Warning:** keep `private=True` so that we are not transgressing any BOP distribution licenses.
 
 
-Wohoo! There we have our validation data ready to pull, now onto [generating] the training data!
+Wohoo! There we have our validation data ready to pull, now onto [generating] the fine-tuning data!
 
 
-## Generate your synthetic training dataset
+## Generate your synthetic fine-tuning dataset
 We'll use my own `sdg-engine` package, a Python package that interfaces easily with a Blender scene to generate Object Detection synthetic annotations.
 
 As inputs, it needs:
@@ -220,7 +225,7 @@ So that you don't have to create it from scratch, I've included a basic scene wi
 
 Tour around the scene, play with the lights, get acquainted with the structure of the scene.
 
-> I've refrained from spending too much time improving the scene's photorealism, but obviously whoever's reading this is encouraged to play around with this. When we've trained our model, we'll come back to this as one of the main axis of improvement for the performance of our trained model.
+> I've refrained from spending too much time improving the scene's photorealism, but obviously whoever's reading this is encouraged to play around with this. When we've fine-tuned our model, we'll come back to this as one of the main axis of improvement for the performance of our fine-tuned model.
 
 #### The YAML configuration file: Create SDG job configuration
 
@@ -278,7 +283,7 @@ The full configuration can be found in `./sdg-engine/tutorials/train-detr/bop-hb
 > - `check_visibility: true` runs a raycast function to only include the visible pixels of each object in the image as part of the output bounding box. Set it to `false` when speed is necessary and your scene doesn't have too many occlusions.
 > - `debug: true` is super handy to quickly visualize the result of different configurations, set it to `false` when you are ready to submit a big job.
 
-#### Generating the training data
+#### Generating the fine-tuning data
 
 Now that everything's in place, we can generate the data by just running the command below:
 
@@ -287,9 +292,9 @@ Now that everything's in place, we can generate the data by just running the com
 poetry run python -m sdg_engine.main --config synthetic-bop-homebrew-scene-3-small.config.yaml
 ```
 
-### Push your `train` synthetic dataset into the HuggingFace Hub
+### Push your synthetic dataset into the HuggingFace Hub
 
-Push your generated training dataset into the Hub:
+Push your generated fine-tuning dataset into the Hub:
 
 ```python
 from datasets import load_dataset
@@ -305,14 +310,14 @@ synthetic_dataset.push_to_hub(
 )
 ```
 
-Now the synthetic training dataset is ready to pull from the HuggingFace Hub.
+Now the synthetic fine-tuning dataset is ready to pull from the HuggingFace Hub.
 
 ## Putting it all together
 Great! By now you should have two datasets living in your HuggingFace Hub:
 1. A real-world validation `dataset`, collected from a widely used open source benchmark
-2. A synthetic training `dataset`, generated by you using Blender
+2. A synthetic fine-tuning `dataset`, generated by you using Blender
 
-With these two datasets we are ready to move onto the next part of this tutorial: [**Part 2: Train DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2), see you there!
+With these two datasets we are ready to move onto the next part of this tutorial: [**Part 2: Fine-tune DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2), see you there!
 
 
 
