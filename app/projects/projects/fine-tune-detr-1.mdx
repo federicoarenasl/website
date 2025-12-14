@@ -1,0 +1,332 @@
+---
+title: 'Fine-tune a Vision Transformer on Synthetic Data, Part 1: Generate the training data using Blender.'
+publishedAt: '2025-12-14'
+summary: 'Explore the enduring debate between using spaces and tabs for code indentation, and why this choice matters more than you might think.'
+---
+
+_This is an updated version of the blog I made years ago on generating synthetic data with Blender to fine-tune a YOLO model, if you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
+
+## Introduction
+
+This tutorial will walk you through fine-tuning a Vision Transformer on synthetic data to perform object detection.
+
+We'll use the [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package to generate the data with Blender, fine-tune a DEtection TRansformer (DETR) model  using the HuggingFace 🤗 `transformers` and `datasets` libraries, and validate its performance against one of the open source _"BOP: Benchmark for 6D Object Pose Estimation"_ benchmark datasets [1].
+
+This tutorial is divided in two parts:
+1. [**Part 1: Generate data using Blender**](/projects/train-detr-on-synthetic-data-1): this part focuses on setting up your Blender scene, your `sdg-package`, generating your fine-tuning data, and pushing your `train` and `validation` datasets into the HuggingFace Hub.
+2. [**Part 2: Fine-tune DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2): this part focuses on taking your `train`, and `validation` datasets and fine-tuning DETR using the HuggingFace `transformers` library.
+
+By the end of this tutorial, you'll have created a synthetic dataset using Blender, trained a Vision Transformer on it, and evaluated its performance on an open source dataset — all with HuggingFace 🤗.
+
+If you have any questions or comments regarding these tutorials, please let me know at [github.com/federicoarenasl/sdg-engine/issues](https://github.com/federicoarenasl/sdg-engine/issues).
+
+Let's dive right in!
+
+#### Prerequisites
+Before getting started with this part of the tutorial, please make sure you have the following software installed:
+1. Blender, you can follow the steps [here](https://www.blender.org/download/) to install Blender on your computer.
+2. The [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package as well as its ML dependencies (hence the `--with=torch` flag), which you can do with the following commands:
+
+```bash
+git clone github.com/federicoarenasl/sdg-engine.git;
+cd sdg-engine;
+poetry install --with=torch
+```
+
+> Using the flag `--with=torch` will prepare us to run the second part of this tutorial.
+
+#### The BOP Homebrew Dataset
+The BOP benchmark has a multitude of diverse datasets. Given that our task is focused on object detection, I've picked the _"HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects"_ dataset [2]. 
+
+This dataset has a multitude of scenes with different objects rotating on a platform, and for simplicity we'll fine-tune our model to detect objects in only one of their scenes — scene No. 3 — shown below:
+
+<Image
+  src="/hb-dataset-sample.gif"
+  alt="Sample from the Homebrew BOP dataset showing 4 different objects on a rotating platform"
+  width={480}
+  height={315}
+/>
+
+> TIP: As the dataset name suggests, it was created for more than just object detection. However, its structure is very well suited for evaluating our own models fine-tuned for straightforward object detection tasks.
+
+
+## Prepare your validation dataset
+The core benefit of using the Homebrew dataset in this tutorial is that it provides real-world ground truth that can be used for validating our model that was fine-tuned on synthetic data. Without an already labelled real-world dataset, we wouldn't be able to really measure our model's performance in the real world.
+
+Let's prepare our validation dataset.
+
+#### Download the raw validation data
+Download the data from the BOP HuggingFace Organization, let's define some variables:
+
+```python
+DATASET_NAME="hb" # short for Homebrew
+SRC=f"https://huggingface.co/datasets/bop-benchmark/{DATASET_NAME}/resolve/main"
+```
+
+This lets us pull the validation images and labels using `wget`:
+
+```python
+!mkdir {DATASET_NAME}; cd {DATASET_NAME}
+# Validation images.
+!wget {SRC}/{DATASET_NAME}_validation_dataset.zip
+!unzip {DATASET_NAME}_validation_dataset.zip
+```
+
+This leaves us with the `./hb_validation_dataset` folder, from which we'll only use the files under `./hb_validation_dataset/003`, as we are only using Scene No. 3 for simplicity.
+
+
+#### Prepare the raw validation data into an `imagefolder`
+Imagefolders [3] are simple file structures ready to load into an HuggingFace `dataset`. We'll convert our recently downloaded validation dataset located in `DATASET_PATH`, into an `imagefolder` located at `IMAGEFOLDER_PATH` ready for ingestion.
+
+```python
+DATASET_PATH = "./hb_validation_dataset/000003"
+IMAGEFOLDER_PATH = "./real-bop-homebrew-scene-3/val"
+```
+
+Next, we'll define some `pydantic` models to store our labels in:
+
+```python
+class Objects(BaseModel):
+    """
+    Stores annotation details for all objects in a single image,
+    including bounding boxes, ids, areas, and categories.
+    """
+    bbox: List[List[float]]
+    bbox_ids: List[int]
+    areas: List[float]
+    categories: List[int]
+
+class FormattedLabel(BaseModel):
+    """
+    Format for a labeled image in the dataset, 
+    containing metadata and associated object annotations.
+    """
+    image_id: str
+    width: int
+    height: int
+    file_name: str
+    objects: Objects
+```
+
+Now we'll move our validation images into the `IMAGEFOLDER_PATH`, and collect the labels into a list of `FormattedLabel`s.
+
+```python
+from pathlib import Path
+import json, shutil
+from PIL import Image
+from typing import Dict, List
+from pydantic import BaseModel
+
+# Define paths
+DATASET = Path(DATASET_PATH)
+RGB_DIR = DATASET / "rgb"
+OUT_DIR = Path(IMAGEFOLDER_PATH)
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Helper function to remove leading zeros
+def _remove_leading_zeros(name: str) -> str:
+    """
+    Strip leading zeros from the image filename (before the extension)
+    and return the resulting ID string. If the result is empty, returns "0".
+    """
+    s = name.split(".")[0].lstrip("0")
+    return s or "0"
+
+# Open JSON labels into
+with (DATASET / "scene_gt_info.json").open() as f:
+    scene_gt_info: Dict = json.load(f)
+
+# Go through all RGB images and collect
+# formatted labels into a list
+formatted_labels: List[FormattedLabel] = []
+for src in sorted(p for p in RGB_DIR.iterdir() if p.is_file()):
+    # Move image to imagefolder
+    dst = OUT_DIR / src.name
+    shutil.copy2(src, dst)
+
+    # Collect labels corresponding to image ids
+    iid = remove_leading_zeros(src.name)
+    bboxes: List[List[float]] = [o["bbox_obj"] for o in scene_gt_info[iid]]
+
+    # Collect image height and width
+    with Image.open(src) as im:
+        width, height = im.size
+
+    # Collect areas, and initialize bounding box ids
+    n = len(bboxes)
+    areas = [w * h for (_, _, w, h) in bboxes]
+    bbox_ids = [int(iid) * 1000 + i for i in range(n)]
+
+    # Create formatted label using Pydantic model
+    label = FormattedLabel(
+        image_id=iid,
+        width=width,
+        height=height,
+        file_name=src.name,
+        objects=Objects(
+            bbox=bboxes,
+            bbox_ids=bbox_ids,
+            areas=areas,
+            categories=list(range(n)),
+        ),
+    )
+    formatted_labels.append(label)
+```
+Finally, go through the `formatted_labels` and save each as a line into `metadata.jsonl` file, necessary for the `imagefolder` to locate each image's annotations:
+```python
+meta_path = OUT_DIR / "metadata.jsonl"
+with meta_path.open("w") as f:
+    for label in formatted_labels:
+        f.write(label.model_dump_json() + "\n")
+```
+
+#### Push the validation `dataset` to your HuggingFace Hub
+Now that the `imagefolder` is ready, you can simply load it from your `IMAGEFOLDER_PATH`:
+```python
+from datasets import load_dataset
+
+val_dataset = load_dataset("imagefolder", data_dir=IMAGEFOLDER_PATH)
+```
+
+Finally push it to the HuggingFace Hub:
+```python
+val_dataset.push_to_hub(
+    "your-username/real-bop-homebrew-scene-3", # your HF username / the dataset name
+    token="", # your HF token
+    private=True
+)
+```
+
+> **Warning:** keep `private=True` so that we are not transgressing any BOP distribution licenses.
+
+
+Wohoo! There we have our validation data ready to pull, now onto [generating] the fine-tuning data!
+
+
+## Generate your synthetic fine-tuning dataset
+We'll use my own `sdg-engine` package, a Python package that interfaces easily with a Blender scene to generate Object Detection synthetic annotations.
+
+As inputs, it needs:
+ 1. The Blender scene, and 
+ 2. The `YAML` configuration file which prescribes how to generate the data
+
+It outputs an `imagefolder` ready to push into the HuggingFace Hub.
+
+
+#### The Blender scene: Inspect the Homebrew scene
+So that you don't have to create it from scratch, I've included a basic scene with all the necessary setup.  You can download this scene from `./sdg-engine/tutorials/train-detr/bop-hb-3.blend`. Opening the scene in Blender should show a workspace similar to the one below.
+
+<Image
+  src="/hb-blender-scene.png"
+  alt="Quick overview of the HB Blender scene"
+  width={600}
+  height={315}
+/>
+
+Tour around the scene, play with the lights, get acquainted with the structure of the scene.
+
+> I've refrained from spending too much time improving the scene's photorealism, but obviously whoever's reading this is encouraged to play around with this. When we've fine-tuned our model, we'll come back to this as one of the main axis of improvement for the performance of our fine-tuned model.
+
+#### The YAML configuration file: Create SDG job configuration
+
+As part of the `sdg-engine` package functionality I decided to let users configure the synthetic data generation via a simple `config.yaml` file, which prescribes how the data will be generated. It's far from perfect, and I encourage any reader to find bugs and limitations :).
+
+Below is the `bop-hb-small.config.yaml`, which generates around 300 images and their annotation thanks to its `sweep_config`:
+
+```yml
+# General settings
+engine: blender
+target_path: synthetic-bop-hb-small
+# Whether to draw the bounding boxes on the images
+debug: false
+split: train 
+# Only include visible parts of objects (not occluded)
+check_visibility: true
+
+# Camera settings
+random_seed: 0
+resolution: [640, 480]
+samples: 25
+
+# Scene settings
+scene_config:
+  scene_path: tutorials/train-detr/bop-hb-3.blend
+  scene_name: Scene
+  camera_names:
+    - Camera
+  axis_names:
+    - Axis
+  light_names:
+    - Light
+  # Mapping of element names to their category index
+  element_mapping:
+    obj_00: 0
+    obj_01: 1
+    obj_02: 2
+    obj_03: 3
+
+# Sweep settings, 
+sweep_config:
+    name: example_sweep
+    step: 12
+    yaw_limits: [-180.0, 180.0]
+    roll_limits: [-85.0, 85.0]
+    camera_height_limits: [0.5, 1.5]
+    light_energy_limits: [50, 50]
+
+```
+
+The full configuration can be found in `./sdg-engine/tutorials/train-detr/bop-hb-small.config.yml`, use this configuration to get acquainted with the data generation. Once you are ready to generate the final dataset, switch it to `bop-hb-large.config.yml`.
+
+> **Tip:** some pointers as to what each field means:
+> - `engine: blender` directs `sdg-engine` to use Blender as the SDG engine, currently this is the only supported rendering engine.
+> - `check_visibility: true` runs a raycast function to only include the visible pixels of each object in the image as part of the output bounding box. Set it to `false` when speed is necessary and your scene doesn't have too many occlusions.
+> - `debug: true` is super handy to quickly visualize the result of different configurations, set it to `false` when you are ready to submit a big job.
+
+#### Generating the fine-tuning data
+
+Now that everything's in place, we can generate the data by just running the command below:
+
+```bash
+# Switch to `-large.config.yml` when ready
+poetry run python -m sdg_engine.main --config synthetic-bop-homebrew-scene-3-small.config.yaml
+```
+
+### Push your synthetic dataset into the HuggingFace Hub
+
+Push your generated fine-tuning dataset into the Hub:
+
+```python
+from datasets import load_dataset
+
+# Load synthetic generated dataset from imagefolder
+synthetic_dataset = load_dataset(
+    "imagefolder", data_dir="../synthetic-bop-hb-3-large")
+
+# Push your generated dataset 
+synthetic_dataset.push_to_hub(
+    "federicoarenas-ai/synthetic-bop-homebrew-scene-3-large",
+    token="",
+)
+```
+
+Now the synthetic fine-tuning dataset is ready to pull from the HuggingFace Hub.
+
+## Putting it all together
+Great! By now you should have two datasets living in your HuggingFace Hub:
+1. A real-world validation `dataset`, collected from a widely used open source benchmark
+2. A synthetic fine-tuning `dataset`, generated by you using Blender
+
+With these two datasets we are ready to move onto the next part of this tutorial: [**Part 2: Fine-tune DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2), see you there!
+
+
+
+---------
+> [1] [BOP Benchmark – 6D Object Pose Estimation](https://bop.felk.cvut.cz/home/ )
+> If you’re working on 6D pose estimation, you’ll almost certainly run into BOP. It’s the go-to benchmark for comparing methods, with well-defined datasets, metrics, and evaluation scripts that make results easier to reproduce and compare.
+
+> [2] [HomebrewedDB (ICCVW 2019)](https://openaccess.thecvf.com/content_ICCVW_2019/papers/R6D/Kaskman_HomebrewedDB_RGB-D_Dataset_for_6D_Pose_Estimation_of_3D_Objects_ICCVW_2019_paper.pdf)
+> A practical RGB-D dataset for 6D pose estimation, introduced at an ICCV workshop. It focuses on more realistic, messy scenes (clutter, occlusion, imperfect captures), which makes it a nice complement to cleaner benchmark datasets.
+
+> [3] [Hugging Face Datasets – `ImageFolder`](https://huggingface.co/docs/datasets/en/image_dataset#imagefolder)
+> A handy utility for loading image datasets straight from a folder structure—no custom dataset code required. Great for quick experiments, baselines, or when you just want to get a vision model running without too much setup.
