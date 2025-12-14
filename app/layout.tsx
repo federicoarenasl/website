@@ -25,6 +25,12 @@ export const metadata: Metadata = {
     template: '%s | Federico Arenas',
   },
   description: 'These are my thoughts.',
+  // Viewport configuration for proper mobile rendering
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
   // Open Graph metadata for social media sharing
   openGraph: {
     title: "Federico Arenas",

@@ -101,7 +101,7 @@ function CustomLink(props) {
  * Image component with rounded corners, border, and optional caption
  * Centers the image and displays the alt text as a caption below
  * Uses regular img tag with responsive styling to prevent cropping
- * For SVGs, removes height constraint to allow natural aspect ratio
+ * Safari-specific fixes applied for proper SVG rendering on iOS
  * @param {Object} props - Image props including alt, src, width, height, etc.
  * @returns {JSX.Element} Styled image container with optional caption
  */
@@ -116,6 +116,8 @@ function RoundedImage(props) {
         style={{ 
           width: '100%',
           maxWidth: width ? `${width}px` : '100%',
+          // Safari fix: ensure container doesn't constrain SVG
+          minHeight: isSvg ? 0 : 'auto',
         }}
       >
         <img 
@@ -126,13 +128,21 @@ function RoundedImage(props) {
             maxWidth: '100%',
             width: '100%',
             height: 'auto',
+            // Safari fix: use contain to prevent cropping
             objectFit: 'contain',
+            // Safari fix: ensure SVG scales properly
+            ...(isSvg && {
+              maxHeight: 'none',
+              WebkitTransform: 'translateZ(0)', // Force hardware acceleration
+            }),
             display: 'block'
           }}
-          {...(isSvg 
-            ? { width } // For SVGs, only set width, let height be auto
-            : { width, height } // For other images, set both
-          )}
+          // For SVGs, don't set height attribute to let Safari calculate it naturally
+          // For other images, set both width and height
+          width={width}
+          {...(isSvg ? {} : { height })}
+          // Safari fix: loading attribute for better rendering
+          loading="lazy"
           {...restProps} 
         />
       </div>

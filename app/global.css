@@ -83,6 +83,17 @@ html {
   @apply m-0;
 }
 
+/* Safari iOS fix for SVG images - prevents cropping */
+/* -webkit-touch-callout is Safari-specific, so this targets iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  img[src$=".svg"] {
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+    -webkit-transform: translateZ(0); /* Force hardware acceleration */
+  }
+}
+
 .prose p {
   @apply my-4 text-neutral-800 dark:text-neutral-200;
 }
