@@ -100,54 +100,41 @@ function CustomLink(props) {
 /**
  * Image component with rounded corners, border, and optional caption
  * Centers the image and displays the alt text as a caption below
- * Uses object-fit: contain to prevent cropping when aspect ratios don't match
+ * Uses responsive sizing to prevent cropping on mobile devices
  * @param {Object} props - Image props including alt, src, width, height, etc.
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
-  const { width, height, alt, ...restProps } = props
+  const { width, height, alt, src, ...restProps } = props
   
-  // If width and height are provided, use a container with aspect ratio
-  // Otherwise, use responsive sizing
-  if (width && height) {
-    return (
-      <div className="flex flex-col items-center my-6">
-        <div 
-          className="relative rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
-          style={{ 
-            width: '100%', 
-            maxWidth: `${width}px`,
-            aspectRatio: `${width} / ${height}`
-          }}
-        >
-          <Image 
-            alt={alt || ''} 
-            fill
-            style={{ objectFit: 'contain' }}
-            sizes={`(max-width: ${width}px) 100vw, ${width}px`}
-            {...restProps} 
-          />
-        </div>
-        {/* Display alt text as caption if provided */}
-        {alt && (
-          <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
-            {alt}
-          </p>
-        )}
-      </div>
-    )
-  }
+  // For SVG files, use unoptimized to prevent Next.js from processing them
+  const isSvg = typeof src === 'string' && src.endsWith('.svg')
   
-  // Fallback for images without explicit dimensions
   return (
-    <div className="flex flex-col items-center my-6">
-      <Image 
-        alt={alt || ''} 
-        className="rounded-lg border border-gray-300 dark:border-gray-600" 
-        width={width}
-        height={height}
-        {...restProps} 
-      />
+    <div className="flex flex-col items-center my-6 w-full">
+      <div 
+        className="rounded-lg border border-gray-300 dark:border-gray-600"
+        style={{ 
+          width: '100%',
+          maxWidth: width ? `${width}px` : '100%',
+        }}
+      >
+        <Image 
+          alt={alt || ''} 
+          src={src}
+          width={width}
+          height={height}
+          className="rounded-lg w-full h-auto"
+          style={{ 
+            maxWidth: '100%',
+            height: 'auto',
+            objectFit: 'contain'
+          }}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 500px"
+          unoptimized={isSvg}
+          {...restProps} 
+        />
+      </div>
       {/* Display alt text as caption if provided */}
       {alt && (
         <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
