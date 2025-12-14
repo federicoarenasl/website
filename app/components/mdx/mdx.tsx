@@ -1,9 +1,40 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
-import { highlight } from 'sugar-high'
 import React from 'react'
-import { CodeBlock, InlineCode } from './ui/code-block'
+import { CodeBlock, InlineCode } from '../ui/code-block'
+import { FootnoteProvider, FootnoteReference, FootnoteDefinition, FootnoteList, parseFootnotes } from './footnotes'
+import { TextWithFootnotes, ProcessedParagraph, extractFootnotesFromContent } from './footnote-utils'
+
+/**
+ * Process MDX content to convert ^[1] references to FootnoteReference components
+ */
+function processMDXFootnotes(content: string, footnotes: Array<{ id: string; content: string }>) {
+  // Create a map of footnote IDs to content for quick lookup
+  const footnoteMap = new Map(footnotes.map(fn => [fn.id, fn.content]))
+  
+  // Track which footnotes we've already processed to avoid duplication
+  const processedFootnotes = new Set<string>()
+  
+  // Replace ^[1] patterns with FootnoteReference components
+  let processedContent = content.replace(/\^\[(\d+)\]/g, (match, id) => {
+    const footnoteContent = footnoteMap.get(id)
+    if (footnoteContent) {
+      // Only pass content to the first occurrence of each footnote
+      // This ensures that each footnote is only defined once
+      if (!processedFootnotes.has(id)) {
+        processedFootnotes.add(id)
+        return `<FootnoteReference id="${id}">${footnoteContent}</FootnoteReference>`
+      } else {
+        // For subsequent references, don't pass content to avoid duplication
+        return `<FootnoteReference id="${id}"></FootnoteReference>`
+      }
+    }
+    return match // Keep original if no footnote found
+  })
+  
+  return processedContent
+}
 
 /**
  * Table component for rendering structured data in MDX content
@@ -100,7 +131,10 @@ function RoundedImage(props) {
  */
 function Pre({ children, ...props }) {
   // Extract language from className if present (e.g., "language-javascript" -> "javascript")
-  const language = props.className?.replace('language-', '') || ''
+  // MDX puts the language on the code element, not the pre element
+  const language = (children?.props?.className || props.className || '')
+    .replace('language-', '')
+    .replace(/^lang-/, '')
   
   // Extract code content - handle both string children and code element children
   const codeContent = typeof children === 'string' 
@@ -124,6 +158,45 @@ function slugify(str) {
     .replace(/&/g, '-and-') // Replace & with 'and'
     .replace(/[^\w\-]+/g, '') // Remove all non-word characters except for -
     .replace(/\-\-+/g, '-') // Replace multiple - with single -
+}
+
+/**
+ * Custom blockquote component that supports special styling for notes and warnings
+ * Detects if content starts with "NOTE:", "Warning:", etc. and applies appropriate styling
+ * @param {Object} props - Blockquote props including children
+ * @returns {JSX.Element} Styled blockquote element
+ */
+function CustomBlockquote({ children, ...props }) {
+  // Extract text content from children to detect quote type
+  const getTextContent = (node: React.ReactNode): string => {
+    if (typeof node === 'string') return node
+    if (React.isValidElement(node) && node.props.children) {
+      return getTextContent(node.props.children)
+    }
+    if (Array.isArray(node)) {
+      return node.map(getTextContent).join('')
+    }
+    return ''
+  }
+
+  const textContent = getTextContent(children).trim()
+  const lowerContent = textContent.toLowerCase()
+
+  // Detect quote type based on content
+  let quoteType = 'default'
+  if (lowerContent.startsWith('note:') || lowerContent.startsWith('note ')) {
+    quoteType = 'note'
+  } else if (lowerContent.startsWith('warning:') || lowerContent.startsWith('warning ')) {
+    quoteType = 'warning'
+  } else if (lowerContent.startsWith('tip:') || lowerContent.startsWith('tip ')) {
+    quoteType = 'tip'
+  }
+
+  return (
+    <blockquote className={`custom-blockquote ${quoteType}`} {...props}>
+      {children}
+    </blockquote>
+  )
 }
 
 /**
@@ -174,21 +247,97 @@ let components = {
   a: CustomLink,
   code: InlineCode,
   pre: Pre,
+  blockquote: CustomBlockquote,
   Table,
+  FootnoteReference,
+  FootnoteDefinition,
+  TextWithFootnotes,
+  ProcessedParagraph,
 }
 
 /**
  * Custom MDX component wrapper that provides enhanced rendering capabilities
  * Combines default components with any additional components passed via props
+ * Now includes automatic footnote processing for ^[1] syntax
  * @param {Object} props - MDX props including source content and optional custom components
  * @param {Object} [props.components] - Additional custom components to merge with defaults
- * @returns {JSX.Element} Rendered MDX content with custom components
+ * @param {boolean} [props.autoProcessFootnotes=true] - Whether to automatically process footnote references
+ * @returns {JSX.Element} Rendered MDX content with custom components and footnotes
  */
 export function CustomMDX(props) {
+  // If auto-processing is enabled, extract footnotes from the content
+  if (props.autoProcessFootnotes !== false) {
+    const { cleanedContent, footnotes } = extractFootnotesFromContent(props.source)
+    
+    // Process the content to convert ^[1] references to FootnoteReference components
+    const processedContent = processMDXFootnotes(cleanedContent, footnotes)
+
+    // Enhanced components that include footnote processing
+    const enhancedComponents = {
+      ...components,
+      ...(props.components || {}),
+      FootnoteReference,
+      FootnoteDefinition,
+      TextWithFootnotes,
+      ProcessedParagraph,
+    }
+
+    return (
+      <FootnoteProvider>
+        <MDXRemote
+          source={processedContent}
+          components={enhancedComponents}
+        />
+        <FootnoteList />
+      </FootnoteProvider>
+    )
+  }
+
+  // Standard processing without automatic footnote extraction
   return (
-    <MDXRemote
-      {...props}
-      components={{ ...components, ...(props.components || {}) }}
-    />
+    <FootnoteProvider>
+      <MDXRemote
+        {...props}
+        components={{ ...components, ...(props.components || {}) }}
+      />
+      <FootnoteList />
+    </FootnoteProvider>
   )
+}
+
+/**
+ * Legacy CustomMDX component for backward compatibility
+ * Use this if you want to disable automatic footnote processing
+ * @param {Object} props - MDX props including source content and optional custom components
+ * @returns {JSX.Element} Rendered MDX content with custom components
+ */
+export function CustomMDXLegacy(props) {
+  return (
+    <FootnoteProvider>
+      <MDXRemote
+        {...props}
+        components={{ ...components, ...(props.components || {}) }}
+      />
+      <FootnoteList />
+    </FootnoteProvider>
+  )
+}
+
+/**
+ * Utility function to create footnote definitions from a simple object
+ * Useful for programmatically creating footnotes
+ */
+export function createFootnotes(footnoteMap: Record<string, string>) {
+  return Object.entries(footnoteMap).map(([id, content]) => ({
+    id,
+    content
+  }))
+}
+
+/**
+ * Component for rendering a single footnote reference
+ * Usage: <Footnote id="1" content="This is a footnote" />
+ */
+export function Footnote({ id, content }: { id: string; content: string }) {
+  return <FootnoteReference id={id}>{content}</FootnoteReference>
 }
