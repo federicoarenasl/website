@@ -100,14 +100,13 @@ function CustomLink(props) {
 /**
  * Image component with rounded corners, border, and optional caption
  * Centers the image and displays the alt text as a caption below
- * Uses responsive sizing to prevent cropping on mobile devices
+ * Uses regular img tag with responsive styling to prevent cropping
+ * For SVGs, removes height constraint to allow natural aspect ratio
  * @param {Object} props - Image props including alt, src, width, height, etc.
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
   const { width, height, alt, src, ...restProps } = props
-  
-  // For SVG files, use unoptimized to prevent Next.js from processing them
   const isSvg = typeof src === 'string' && src.endsWith('.svg')
   
   return (
@@ -119,19 +118,21 @@ function RoundedImage(props) {
           maxWidth: width ? `${width}px` : '100%',
         }}
       >
-        <Image 
+        <img 
           alt={alt || ''} 
           src={src}
-          width={width}
-          height={height}
-          className="rounded-lg w-full h-auto"
+          className="rounded-lg block"
           style={{ 
             maxWidth: '100%',
+            width: '100%',
             height: 'auto',
-            objectFit: 'contain'
+            objectFit: 'contain',
+            display: 'block'
           }}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 500px"
-          unoptimized={isSvg}
+          {...(isSvg 
+            ? { width } // For SVGs, only set width, let height be auto
+            : { width, height } // For other images, set both
+          )}
           {...restProps} 
         />
       </div>
