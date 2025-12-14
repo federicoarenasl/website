@@ -104,77 +104,20 @@ function CustomLink(props) {
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
-  // Destructure common props so we can safely add responsive sizing
-  // NOTE: We intentionally do NOT support `fill` here because it can crop on mobile
-  // when the parent container has a constrained height.
-  const { alt, className, style, ...rest } = props
-
   return (
-    <figure className="my-6">
-      {/* Constrain max width so desktop doesn't go edge-to-edge; mobile remains full width */}
-      <div className="mx-auto w-full max-w-3xl">
-        <Image
-          alt={alt}
-          {...rest}
-          // Ensure the image is responsive and does not crop on mobile
-          className={[
-            'w-full h-auto rounded-lg border border-gray-300 dark:border-gray-600',
-            className,
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          // Ensure layout is responsive without relying on parent height
-          style={{
-            width: '100%',
-            height: 'auto',
-            ...style,
-          }}
-          // Let Next.js pick an appropriate size; tweak 768px if your layout differs
-          sizes="(max-width: 768px) 100vw, 768px"
-        />
-      </div>
-
+    <div className="flex flex-col items-center my-6">
+      <Image 
+        alt={props.alt} 
+        className="rounded-lg border border-gray-300 dark:border-gray-600" 
+        {...props} 
+      />
       {/* Display alt text as caption if provided */}
-      {alt && (
-        <figcaption className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
-          {alt}
-        </figcaption>
+      {props.alt && (
+        <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
+          {props.alt}
+        </p>
       )}
-    </figure>
-  )
-}
-
-/**
- * Image component for markdown images (`![alt](src)`), which compile to <img />
- * Keeps behavior consistent with RoundedImage on mobile (no cropping).
- * @param {Object} props - Standard HTML img props
- * @returns {JSX.Element} Styled image container with optional caption
- */
-function RoundedImg(props) {
-  const { alt, className, ...rest } = props
-
-  return (
-    <figure className="my-6">
-      <div className="mx-auto w-full max-w-3xl">
-        <img
-          {...rest}
-          alt={alt}
-          className={[
-            'w-full h-auto rounded-lg border border-gray-300 dark:border-gray-600',
-            className,
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        />
-      </div>
-
-      {/* Display alt text as caption if provided */}
-      {alt && (
-        <figcaption className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
-          {alt}
-        </figcaption>
-      )}
-    </figure>
+    </div>
   )
 }
 
@@ -300,11 +243,7 @@ let components = {
   h4: createHeading(4),
   h5: createHeading(5),
   h6: createHeading(6),
-
-  // Support both <Image /> in MDX and markdown images ![]()
   Image: RoundedImage,
-  img: RoundedImg,
-
   a: CustomLink,
   code: InlineCode,
   pre: Pre,
