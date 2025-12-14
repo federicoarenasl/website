@@ -362,7 +362,7 @@ After running the fine-tuning for 10,000 steps, we can observe the model's learn
 The fine-tuning loss shows a steady decline throughout the process, indicating that the model is effectively adapting from the synthetic data:
 
 <Image
-  src="/train_loss.svg"
+  src="/train_loss.png"
   alt="Fine-tuning loss curve showing steady decline over 10,000 steps"
   width={500}
   height={315}
@@ -371,7 +371,7 @@ The fine-tuning loss shows a steady decline throughout the process, indicating t
 The evaluation loss on the real-world Homebrew dataset also decreases, suggesting that the model generalizes well from synthetic to real-world data:
 
 <Image
-  src="/eval_loss.svg"
+  src="/eval_loss.png"
   alt="Evaluation loss curve on real-world validation data"
   width={500}
   height={315}
@@ -380,7 +380,7 @@ The evaluation loss on the real-world Homebrew dataset also decreases, suggestin
 The mean Average Precision (mAP) metric steadily improves during fine-tuning, demonstrating that the model's detection accuracy is increasing:
 
 <Image
-  src="/eval_map.svg"
+  src="/eval_map.png"
   alt="Mean Average Precision (mAP) metric progression during fine-tuning"
   width={500}
   height={315}
