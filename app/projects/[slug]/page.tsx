@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { CustomMDX } from 'app/components/mdx'
+import { CustomMDX } from 'app/components/mdx/mdx'
 // NOTE: Right now this is a duplicate from the blog page,
 // we can handle metadata generation for projects and blog posts separately,
 // or we can create a shared function to generate metadata for both.

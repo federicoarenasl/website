@@ -1,5 +1,5 @@
 import { readMDXFile } from 'app/utils'
-import { CustomMDX } from 'app/components/mdx'
+import { CustomMDX } from 'app/components/mdx/mdx'
 import path from 'path'
 export const metadata = {
   title: 'CV',
