@@ -3,7 +3,7 @@ export default function Page() {
   return (
     <section>
       <h1 className="mb-8 text-2xl font-semibold tracking-tighter">
-        Hello there fellow traveller!
+        Hi, I'm Fede!
       </h1>
       <p className="mb-4">
         {`Nice to e-meet you. I'm Federico Arenas, fullstack Software Engineer, 
