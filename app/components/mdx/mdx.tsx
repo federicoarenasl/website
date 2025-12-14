@@ -105,16 +105,12 @@ function CustomLink(props) {
  */
 function RoundedImage(props) {
   return (
-    <div className="flex flex-col items-center my-6 w-full">
-      <div className="w-full max-w-full overflow-hidden">
-        <Image 
-          alt={props.alt} 
-          className="rounded-lg border border-gray-300 dark:border-gray-600" 
-          style={{ maxWidth: '100%', height: 'auto', width: '100%' }}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 500px"
-          {...props} 
-        />
-      </div>
+    <div className="flex flex-col items-center my-6">
+      <Image 
+        alt={props.alt} 
+        className="rounded-lg border border-gray-300 dark:border-gray-600" 
+        {...props} 
+      />
       {/* Display alt text as caption if provided */}
       {props.alt && (
         <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
