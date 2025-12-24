@@ -4,70 +4,38 @@ publishedAt: '2025-12-14'
 summary: 'Explore the enduring debate between using spaces and tabs for code indentation, and why this choice matters more than you might think.'
 ---
 
-_This is an updated version of the blog I made years ago on generating synthetic data with Blender to fine-tune a YOLO model. If you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
-
-_This section of the tutorial is currently under development. Thank you for your patience as I work to make it even better!_
+_This section of the tutorial is currently under development. Thank you for your patience as I work to make it better!_
 
 ### Introduction
 
-This tutorial will walk you through fine-tuning a Vision Transformer on synthetic data to perform object detection.
+This is Part 2 of my tutorial series on fine-tuning a Vision Transformer on synthetic data to perform object detection. By this point you should have a synthetically generated train dataset and a real-world validation dataset sitting on your own HuggingFace Hub.
 
-We'll use the [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package to generate the data with Blender, fine-tune a DEtection TRansformer (DETR) model using the HuggingFace 🤗 `transformers` and `datasets` libraries, and validate its performance against one of the open source _"BOP: Benchmark for 6D Object Pose Estimation"_ benchmark datasets [1].
-
-This tutorial is divided in two parts:
-1. [**Part 1: Generate data using Blender**](/projects/train-detr-on-synthetic-data-1): this part focuses on setting up your Blender scene, your `sdg-package`, generating your fine-tuning data, and pushing your `train` and `validation` datasets into the HuggingFace Hub.
-2. [**Part 2: Fine-tune DETR on Synthetic Data**](/projects/train-detr-on-synthetic-data-2): this part focuses on taking your `train`, and `validation` datasets and fine-tuning DETR using the HuggingFace `transformers` library.
-
-By the end of this tutorial, you'll have created a synthetic dataset using Blender, fine-tuned a Vision Transformer on it, and evaluated its performance on an open source dataset — all with HuggingFace 🤗.
+If you don't have these, you can go back to [**Part 1: Generate data using Blender**](/projects/fine-tune-detr-1) where you'll be able to prepare your training and validation data.
 
 If you have any questions or comments regarding these tutorials, please let me know at [github.com/federicoarenasl/sdg-engine/issues](https://github.com/federicoarenasl/sdg-engine/issues).
 
 Let's dive right in!
 
-## Prerequisites
-Before we start, you'll need an NVIDIA or Apple Silicon GPU in order to fine-tune DETR.
-
-The full tutorial can be run from the following notebook (INSERT LINK), which you can run from a GPU-enabled Google Colab notebook, or from your own GPU-enabled machine.
-
-## i. The BOP Homebrew Dataset
-To keep things reproducible, we'll use an open source dataset as our ground truth for evaluation. I've picked the Homebrew dataset from the widely known Benchmark for 6D Object Pose Estimation (BOP). 
-
-The Homebrew dataset has a multitude of scenes with different objects rotating on a platform, and for simplicity we'll fine-tune our model to detect objects in only one of their scenes -- scene No. 3 -- shown below:
-
-<Image
-  src="/hb-dataset-sample.gif"
-  alt="Sample from the Homebrew BOP dataset showing 4 different objects on a rotating platform"
-  width={480}
-  height={315}
-/>
-
-
-This scene contains 4 different objects, set up on a rotating platform under constant lighting. The resolution of the images is 640px by 420px, and the scene itself contains close to 300 images.
-
-If you want to learn more about the BOP benchmark or the Homebrew dataset, click here or here (INSERT LINKS)!
-
-## iv. Fine-tune DETR using the `transformers` library
+## Fine-tune DETR using the `transformers` library
 Now that we have both our evaluation and our training datasets somewhere safely in the HuggingFace Hub, we are ready to use them to fine-tune our DEtection TRansformer!
 
-### Loading the datasets
+### Load the datasets
 Both of our datasets now hopefully live in the HF Hub, so pulling them is super simple, we can load our synthetic dataset as `train_dataset`, from which we'll only use the `'train'` split:
 
 ```python
 from datasets import load_dataset
 
+# Load synthetic `train_dataset`
 synthetic_dataset = load_dataset(
-    "federicoarenas-ai/synthetic-bop-homebrew-scene-3-medium", 
-    token=os.environ['HF_TOKEN']
+    "federicoarenas-ai/synthetic-bop-homebrew-scene-3-large", 
+    token="" # Yout HF token
     )
 train_dataset = synthetic_dataset['train']
-```
 
-We can do the same for our real-world validation dataset, by loading it into `val_dataset` and only taking the `'validation'` split:
-
-```python
+# Load real-world `val_dataset`
 real_dataset = load_dataset(
     "federicoarenas-ai/real-bop-homebrew-scene-3", 
-    token=os.environ['HF_TOKEN']
+    token="" # Your HF token
     )
 val_dataset = real_dataset['validation']
 ```
@@ -82,10 +50,10 @@ checkpoint = "facebook/detr-resnet-50-dc5"
 image_processor = AutoImageProcessor.from_pretrained(checkpoint)
 ```
 
-> **Tip:** By starting from a pretrained checkpoint, our `image_processor` leverages previously learned visual features, allowing the model to focus on adapting to our specific task rather than learning basic image representations from scratch. This typically leads to faster convergence and improved performance.
+By starting from a pretrained checkpoint, our `image_processor` leverages previously learned visual features, allowing the model to focus on adapting to our specific task rather than learning basic image representations from scratch. This typically leads to faster convergence and improved performance.
 
 ### Augment the data
-Data augmentations are a common thing in any ML fine-tuning pipeline, they let us incentivize generalization in our model via data transformations in the training dataset. We'll prepare these using the albumentations library. This library is awesome, you can `albumentations.Compose` a series of augmentations which will then be applied to each of the datasets.
+Data augmentations are a common thing in any ML fine-tuning pipeline, they let us incentivize generalization in our model via data transformations in the training dataset.
 
 Let's introduce transformations in our training dataset to make the model more robust to rotational variations, brightness and contrast variations, noise variations, and other variations in the images:
 
@@ -107,7 +75,7 @@ train_transform = A.Compose(
     bbox_params=A.BboxParams(format="coco", label_fields=["categories"]),
 )
 ```
-In the case of our validation dataset, we'll want to keep it as close to the real-world distribution as possible, so we'll only apply transformations that homogenize the input data, e.g. ensuring the max size of the image stays within 500px and making sure that we pad all images up to the 500px by 500px mark:
+In the case of our validation dataset, we'll want to keep it as close to the real-world distribution as possible, so we'll only apply transformations that homogenize the input data, like ensuring the max size of the image stays within 500px by 500px size:
 ```python
 test_transform = A.Compose(
     [
@@ -123,7 +91,6 @@ test_transform = A.Compose(
 Now to apply the transformations we'll need a function that takes in any given sample in our HF `dataset`, goes through all bounding boxes in the sample, applies the transformation, and finally returns the embedded image ready for ingestion:
 
 ```python
-
 def transform_aug_ann(sample: dict, transform: A.BasicTransform):
     """Applies trainsformation to the provided sample."""
     image_ids = sample["image_id"]
@@ -150,7 +117,7 @@ def transform_aug_ann(sample: dict, transform: A.BasicTransform):
     return image_processor(images=images, annotations=targets, return_tensors="pt")
 ```
 
-Finally this function can be mapped to all samples in both dataset via the `.with_transform()` method, handy from the HF `datasets`:
+Finally this function can be mapped to all samples in both dataset via the `.with_transform()` method, handy from the HF `datasets` library:
 
 ```python
 def transform_train(sample: dict):
@@ -162,7 +129,6 @@ def transform_test(sample):
     """Apply the `test_transform` to any given sample."""
     return transform_aug_ann(sample, transform=test_transform)
 
-    
 # Apply the transformations
 train_dataset_transformed = train_dataset.with_transform(transform_train)
 test_dataset_transformed = test_dataset.with_transform(transform_test)
@@ -170,11 +136,58 @@ test_dataset_transformed = test_dataset.with_transform(transform_test)
 
 Awesome! We now have our `train_dataset_transformed` and our `val_dataset_transform` ready to use during fine-tuning and validation.
 
-### Prepare evaluation metrics
+### Prepare the evaluation metrics
 
-To evaluate our model's performance, we'll use the Mean Average Precision (mAP) metric from TorchMetrics. The evaluation setup requires three functions that work together to process predictions and compute metrics.
+To evaluate our model's performance, we'll use the Mean Average Precision (mAP) metric from [TorchMetrics](https://lightning.ai/docs/torchmetrics/stable/). The evaluation setup requires three functions that work together to process predictions and compute metrics.
 
-The main `compute_metrics` function accumulates predictions across batches and computes final metrics at the end of evaluation:
+The `process_batch` function converts raw model outputs into a format compatible with TorchMetrics:
+
+```python
+def process_batch(eval_pred) -> tuple[list[dict], list[dict]]:
+    """Turn one batch from Trainer into TorchMetrics-friendly preds/targets."""
+    (_, scores, pred_boxes, _, _), labels = eval_pred
+    preds, targets = [], []
+
+    for i, (label, pbox, sc) in enumerate(zip(labels, pred_boxes, scores)):
+        try:
+            w, h = label["orig_size"]
+            targets.append(build_target(label))
+            preds.append(build_prediction(pbox, sc, w, h))
+        except Exception as e:
+            warnings.warn(f"[process_batch] Skipping sample {i}: {e}")
+            continue
+
+    return preds, targets
+
+```
+
+Next, `aggregate_and_compute` calculates overall and per-class metrics:
+
+```python
+def aggregate_and_compute(
+    all_preds: list[dict], 
+    all_targets: list[dict], 
+    id_to_label: dict | None = None
+) -> dict:
+    """Compute mAP and flatten per-class metrics."""
+    metric = MeanAveragePrecision(box_format="xywh", class_metrics=True)
+    metric.update(preds=all_preds, target=all_targets)
+    metrics = metric.compute()
+
+    # Expand class-wise metrics
+    classes = metrics.pop("classes")
+    map_per_class = metrics.pop("map_per_class")
+    mar_100_per_class = metrics.pop("mar_100_per_class")
+
+    for cls_id, cls_map, cls_mar in zip(classes, map_per_class, mar_100_per_class):
+        cls_name = id_to_label[cls_id.item()] if id_to_label else str(cls_id.item())
+        metrics[f"map_{cls_name}"] = cls_map
+        metrics[f"mar_100_{cls_name}"] = cls_mar
+
+    return {k: round(v.item(), 4) for k, v in metrics.items()}
+```
+
+Finally, we use these two functions in `compute_metrics`, where we accumulate predictions across batches and compute the final, aggregated metrics at the end of evaluation:
 
 ```python
 _batch_cache: list[dict] = []
@@ -203,73 +216,8 @@ def compute_metrics(eval_pred, compute_result: bool):
         return metrics
 ```
 
-The `process_batch` function converts raw model outputs into a format compatible with TorchMetrics:
-
-```python
-def process_batch(eval_pred) -> tuple[list[dict], list[dict]]:
-    """Turn one batch from Trainer into TorchMetrics-friendly preds/targets."""
-    (_, scores, pred_boxes, _, _), labels = eval_pred
-    preds, targets = [], []
-
-    for i, (label, pbox, sc) in enumerate(zip(labels, pred_boxes, scores)):
-        try:
-            w, h = label["orig_size"]
-            targets.append(build_target(label))
-            preds.append(build_prediction(pbox, sc, w, h))
-        except Exception as e:
-            warnings.warn(f"[process_batch] Skipping sample {i}: {e}")
-            continue
-
-    return preds, targets
-
-```
-
-Finally, `aggregate_and_compute` calculates overall and per-class metrics:
-
-```python
-def aggregate_and_compute(
-    all_preds: list[dict], 
-    all_targets: list[dict], 
-    id_to_label: dict | None = None
-) -> dict:
-    """Compute mAP and flatten per-class metrics."""
-    metric = MeanAveragePrecision(box_format="xywh", class_metrics=True)
-    metric.update(preds=all_preds, target=all_targets)
-    metrics = metric.compute()
-
-    # Expand class-wise metrics
-    classes = metrics.pop("classes")
-    map_per_class = metrics.pop("map_per_class")
-    mar_100_per_class = metrics.pop("mar_100_per_class")
-
-    for cls_id, cls_map, cls_mar in zip(classes, map_per_class, mar_100_per_class):
-        cls_name = id_to_label[cls_id.item()] if id_to_label else str(cls_id.item())
-        metrics[f"map_{cls_name}"] = cls_map
-        metrics[f"mar_100_{cls_name}"] = cls_mar
-
-    return {k: round(v.item(), 4) for k, v in metrics.items()}
-```
-
-### Prepare the collate function
-
-The collate function combines individual samples into batches for fine-tuning. It ensures all images are properly padded and formatted:
-
-```python
-def collate_fn(batch: list[torch.Tensor])-> torch.Tensor:
-    """Collate function preparing a batch of samples."""
-    pixel_values = [item["pixel_values"] for item in batch]
-    encoding = image_processor.pad(pixel_values, return_tensors="pt")
-    labels = [item["labels"] for item in batch]
-
-    batch = {}
-    batch["pixel_values"] = encoding["pixel_values"]
-    batch["pixel_mask"] = encoding["pixel_mask"]
-    batch["labels"] = labels
-
-    return batch
-```
-
-### Initialize logging using Weights and Biases
+## Prepare the fine-tuning run
+#### Initialize logging using Weights and Biases
 
 To track our fine-tuning metrics and visualize results, we'll use Weights & Biases. Set up logging with a unique run identifier:
 
@@ -290,10 +238,28 @@ wandb.init(
     config=training_args,
 )
 ```
+#### Prepare the collate function
 
-### Initialize the model and fine-tuning configuration
+The collate function combines individual samples into batches for fine-tuning. It ensures all images are properly padded and formatted:
 
-With our datasets prepared and evaluation metrics configured, we can now initialize the DETR model and set up the fine-tuning parameters.
+```python
+def collate_fn(batch: list[torch.Tensor])-> torch.Tensor:
+    """Collate function preparing a batch of samples."""
+    pixel_values = [item["pixel_values"] for item in batch]
+    encoding = image_processor.pad(pixel_values, return_tensors="pt")
+    labels = [item["labels"] for item in batch]
+
+    batch = {}
+    batch["pixel_values"] = encoding["pixel_values"]
+    batch["pixel_mask"] = encoding["pixel_mask"]
+    batch["labels"] = labels
+
+    return batch
+```
+
+#### Initialize the model and fine-tuning configuration
+
+With our datasets prepared and evaluation metrics configured, we can now initialize the DETR model and set up the fine-tuning training parameters.
 
 First, load the pretrained DETR model and configure it for our specific object classes:
 
@@ -301,7 +267,7 @@ First, load the pretrained DETR model and configure it for our specific object c
 from transformers import DetrForObjectDetection, TrainingArguments
 import datetime
 
-# Prepare model
+#### Prepare model
 model = DetrForObjectDetection.from_pretrained(
     checkpoint,
     id2label=ID_TO_LABEL,
@@ -332,6 +298,13 @@ training_args = TrainingArguments(
 )
 ```
 
+Our fine-tuning hyperparameter consist of a small learning rate intended to slightly update the weights of our pretrained checkpoint, and L2 regularization to penalize large weights during training.  
+
+Furthermore, with these `TrainingArguments` we set up a training run running for 10000 iterations, saving a checkpoint of the trained weights every 10 iterations, running evaluation every 100 iterations, and logging to Weights & Biases every 1 iteration. 
+
+> Note: These are initial training settings, and hyperparameters set by me. I encourage you to try your own to improve fine-tuning performance!
+
+## Fine-tune your model
 Now create the `Trainer` object that orchestrates the fine-tuning loop, combining the model, datasets, and configuration:
 
 ```python
@@ -354,12 +327,7 @@ Finally, start the fine-tuning process:
 trainer.train()
 ```
 
-The model will be fine-tuned for 10,000 steps, evaluating on the real-world validation set every 100 steps and logging metrics to Weights & Biases.
-
-#### iv-4. Fine-tuning run
-After running the fine-tuning for 10,000 steps, we can observe the model's learning progression through several key metrics.
-
-The fine-tuning loss shows a steady decline throughout the process, indicating that the model is effectively adapting from the synthetic data:
+The model will be fine-tuned for 10000 iterations, evaluating on the real-world validation set every 100 steps and logging metrics to Weights & Biases.
 
 <Image
   src="/train_loss.png"
@@ -368,17 +336,19 @@ The fine-tuning loss shows a steady decline throughout the process, indicating t
   height={315}
 />
 
-The evaluation loss on the real-world Homebrew dataset also decreases, suggesting that the model generalizes well from synthetic to real-world data:
+Much like the plot above, you should see the training loss showing a steady decline throughout the process, indicating that the model is effectively adapting from the synthetic data. The training loss is looking jumpy, and we might benefit from reducing the learning rate furthermore, or reducing the batch size used to train our model at every iteration.
+
+#### Evaluation results
+Encouragingly, by looking at the evaluation loss calculated against the real-world validation dataset, our evaluation loss shows a steady decline, indicating that our DETR model is able to generalize to a real-world domain, when trained using synthetic data generated with our `sdg-engine` package.
 
 <Image
   src="/eval_loss.png"
-  alt="Evaluation loss curve on real-world validation data"
+  alt="Evaluation loss on real-world validation data"
   width={500}
   height={315}
 />
 
-The mean Average Precision (mAP) metric steadily improves during fine-tuning, demonstrating that the model's detection accuracy is increasing:
-
+Moreover, by looking at our mean Average Precision (mAP) we are able to see how well the model is doing at correctly predicting the correct classes across our entire validation dataset. 
 <Image
   src="/eval_map.png"
   alt="Mean Average Precision (mAP) metric progression during fine-tuning"
@@ -386,7 +356,8 @@ The mean Average Precision (mAP) metric steadily improves during fine-tuning, de
   height={315}
 />
 
-Here's a demonstration of the fine-tuned model detecting objects in the real-world Homebrew dataset:
+Even though we see a steady improvement, the model's performance saturates at close to `mAP=0.67`, this is enough to demonstrate that our model is able to generalize to a real-world dataset, but well below a production-ready model that can be used reliably.
+
 
 <Image
   src="/trained_demo.gif"
@@ -395,8 +366,20 @@ Here's a demonstration of the fine-tuned model detecting objects in the real-wor
   height={315}
 />
 
+From the qualitative results above, we see that our model is able to detect the Minion and the Butter quite well, but struggles with the Toy Cow and the Stapler! From further investigation, this is clearly reflected in our model's mean Average Precision for each individual object.
 
-## v. What did we learn today?
+<Image
+  src="/individual_eval_map.png"
+  alt="Our trained model's mAP across each of the classes"
+  width={500}
+  height={315}
+/>
+
+Clearly our model's struggling with the Toy Cow and the Stapler, a key area for improvement. 
+
+> Tip: This gives us a strong clue on where to start improving our model's performance, by either (1) upsampling data from these classes, (2) generating more diverse data containing both of these objects, or by (3) improving the rendering quality of both of these classes directly in Blender.
+
+## Meagre conclusions
 
 In this tutorial, we successfully fine-tuned a DETR model using entirely synthetic data generated from Blender and evaluated it on real-world images from the BOP Homebrew dataset. The key takeaways include:
 
@@ -405,7 +388,7 @@ In this tutorial, we successfully fine-tuned a DETR model using entirely synthet
 - **Proper evaluation is critical**: Using established metrics like mAP and evaluating on held-out real-world data ensures the model is learning meaningful features rather than memorizing synthetic artifacts.
 - **Blender as a data generator**: With the right setup, Blender can serve as a powerful tool for generating labeled training data, especially for scenarios where real-world data collection is expensive or impractical.
 
-## vi. Where to go from here
+## Where to go from here
 
 There are several directions you can explore to build upon this tutorial:
 
