@@ -4,7 +4,9 @@ publishedAt: '2025-12-14'
 summary: 'Explore the enduring debate between using spaces and tabs for code indentation, and why this choice matters more than you might think.'
 ---
 
-_This section of the tutorial is currently under development. Thank you for your patience as I work to make it better!_
+Synthetic data is a powerful tool to get Machine Learning practitioners off the ground fast into a working model that can perform the task sufficiently well. In this two series we'll do just that for training Computer Vision model. 
+
+We'll pick a concrete real-world object detection task and train a Vision Transformer using synthetically generated image data using Blender, while making sure we are evaluating this model on the real-world target distribution.
 
 ### Introduction
 
@@ -375,26 +377,12 @@ From the qualitative results above, we see that our model is able to detect the 
   height={315}
 />
 
-Clearly our model's struggling with the Toy Cow and the Stapler, a key area for improvement. 
+Clearly our model's struggling with the Toy Cow and the Stapler, a key area for improvement.  When improving our model's performance, we can focus on improving performance on these two classes with a few strategies in mind; either (1) upsampling data from these underperforming classes, (2) generating more diverse data containing both of these objects, or by (3) improving the rendering quality of both of these classes directly in Blender.
 
-> Tip: This gives us a strong clue on where to start improving our model's performance, by either (1) upsampling data from these classes, (2) generating more diverse data containing both of these objects, or by (3) improving the rendering quality of both of these classes directly in Blender.
+## Conclusions
+Synthetic data is a powerful tool to get Machine Learning practitioners off the ground fast into a working model that can perform the task sufficiently well. In this two series tutorial we did just that. We went from a concrete real-world task we wanted to train a Vision Transformer on, to generating the data to train this model, while making sure we were evaluating this model on the real-world target distribution.
 
-## Meagre conclusions
+We used my own package `sdg-engine` to facilitate the synthetic data generation process using Blender, and we use the HuggingFace `datasets` and `transformers` libraries to facilitate the dataset management process, and the fine-tuning process of a DETR model, a specialized transformer designed specifically for object detection.
 
-In this tutorial, we successfully fine-tuned a DETR model using entirely synthetic data generated from Blender and evaluated it on real-world images from the BOP Homebrew dataset. The key takeaways include:
+Finally, we monitored training and evaluation performance using Weights & Biases, and concluded with a class-based error analysis identifying key areas of improvement. I encourage you to outperform my base model and share the strategies you followed to improve mean Average Precision!
 
-- **Synthetic-to-real transfer is feasible**: Models fine-tuned on synthetic data can generalize to real-world scenarios when the synthetic data captures sufficient visual diversity.
-- **Data augmentation matters**: Applying transformations like rotation, brightness adjustments, and noise helps bridge the gap between synthetic and real domains.
-- **Proper evaluation is critical**: Using established metrics like mAP and evaluating on held-out real-world data ensures the model is learning meaningful features rather than memorizing synthetic artifacts.
-- **Blender as a data generator**: With the right setup, Blender can serve as a powerful tool for generating labeled training data, especially for scenarios where real-world data collection is expensive or impractical.
-
-## Where to go from here
-
-There are several directions you can explore to build upon this tutorial:
-
-- **Experiment with domain randomization**: Add more variability to lighting, backgrounds, and object textures in your Blender scenes to improve generalization.
-- **Try different architectures**: Test other object detection models like YOLOv8, Faster R-CNN, or newer vision transformers to compare performance.
-- **Increase dataset size**: Generate more synthetic samples to see how model performance scales with data quantity.
-- **Fine-tune on real data**: Use the synthetic-fine-tuned model as a starting point and fine-tune it with a small amount of real-world labeled data.
-- **Explore other BOP scenes**: Apply the same pipeline to other scenes or datasets in the BOP benchmark to test generalization across different object sets.
-- **Implement domain adaptation**: Look into techniques like adversarial training or style transfer to further reduce the synthetic-to-real domain gap.
