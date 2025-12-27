@@ -11,7 +11,7 @@ export default function Page() {
           href="https://www.materiom.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 dark:text-white underline decoration-white dark:decoration-white hover:text-blue-800 dark:hover:text-white visited:text-purple-600 dark:visited:text-white"
+          className="text-black dark:text-white underline decoration-black dark:decoration-white hover:text-neutral-600 dark:hover:text-white visited:text-neutral-700 dark:visited:text-white"
         >
           Materiom
         </a>
