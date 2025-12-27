@@ -1,0 +1,206 @@
+---
+title: 'An Active Learning demo using PyTorch'
+publishedAt: '2025-12-14'
+summary: 'Explore the enduring debate between using spaces and tabs for code indentation, and why this choice matters more than you might think.'
+---
+
+AI for Science's biggest bottleneck is data acquisition (if you don't believe me, believe DeepMind and its current efforts [1]). 
+
+For many of the scientific domains that AI seeks to transform, collecting high-value data remains expensive. From syntheisizing molecules, to formulating materials, generating a high-quality dataset is time-intensive, and often involves a high integration with a lab. 
+
+Active Learning (AL) [2] is a relatively mainstream technique that addresses this issue. It uses the ML model's own confidence (or lack thereof) to point at where high-value data should be labelled next. By collecting data from the regions where the model is more uncertain of (or less confident in), we are able to improve the model's sample efficiency by X% [3] -- in other words, we train a robust model by being judicious on where to collect expensive data.
+
+However, even though it's a "relatively mainstream" method, I couldn't find any resources that simply demoed this technique in pure Python for ML adjacent practitioners to learn to use more broadly. 
+
+That's what you'll be reading today; a demonstration of Active Learning using Python and PyTorch applied in the Materials Science domain.
+
+## Active Learning
+
+This tutorial will walk you through fine-tuning a Vision Transformer on synthetic data to perform object detection.
+
+<Image
+  src="/al-diagram.png"
+  alt="Sample from the Homebrew BOP dataset showing 4 different objects on a rotating platform"
+  width={480}
+  height={315}
+/>
+
+
+
+## Data DB & Labelling fn.
+Before getting started with this part of the tutorial, please make sure you have the following software installed:
+
+## Model training, inference, and model uncertainty
+The BOP benchmark has a multitude of diverse datasets. Given that our task is focused on object detection, I've picked the _"HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects"_ dataset [2]. 
+
+
+```python
+import torch
+import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
+
+class MLP(nn.Module):
+    """Simple MLP for regression."""
+    def __init__(self, d_in: int, hidden: int = 128, depth: int = 2, dropout: float = 0.0):
+        super().__init__()
+        layers = []
+        h = d_in
+        for _ in range(depth):
+            layers.append(nn.Linear(h, hidden))
+            layers.append(nn.ReLU())
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+            h = hidden
+        layers.append(nn.Linear(h, 1))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.net(x).squeeze(-1)
+```
+
+
+```python
+class ActiveRegressor:
+    """
+    Abstract base class for active learning regressors.
+    """
+    def fit_full(self, X, y): ...
+    def predict_mean(self, X) -> np.ndarray: ...
+    def uncertainty(self, X) -> np.ndarray: ...  # higher = more uncertain
+```
+
+```python
+class MLPEnsembleRegressorAdapter(ActiveRegressor):
+    """
+    MLP ensemble for regression with uncertainty estimation.
+    
+    Uses bootstrap aggregating (bagging) over MLPs. Uncertainty is the
+    predictive variance across ensemble members.
+    """
+    def __init__(self, n_members: int = 5, sample_frac: float = 0.8, random_state: int = 0):
+        self.n_members = n_members
+        self.sample_frac = sample_frac
+        self.random_state = random_state
+        self.members: list[MLP] = []
+        self.scaler = StandardScaler()
+        self.y_mean = 0.0
+        self.y_std = 1.0
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+```
+
+#### Model training
+```python
+    def fit_full(self, X: np.ndarray, y: np.ndarray):
+        rng = check_random_state(self.random_state)
+        n, d = X.shape
+        
+        # Standardize features and targets
+        self.scaler.fit(X)
+        Xs = self.scaler.transform(X)
+        self.y_mean, self.y_std = float(y.mean()), float(y.std() + 1e-8)
+        ys = (y - self.y_mean) / self.y_std
+        
+        # Train ensemble with bootstrap samples
+        m = max(1, int(self.sample_frac * n))
+        self.members = []
+        for _ in range(self.n_members):
+            idx = rng.choice(n, size=m, replace=True)
+            net = MLP(d_in=d)
+            trained = train_mlp(net, Xs[idx], ys[idx], self.device, seed=rng.randint(0, 2**31 - 1))
+            self.members.append(trained.cpu())
+
+
+```
+
+#### Model inference & model uncertainty
+```python
+    def _predict_scaled(self, X: np.ndarray) -> np.ndarray:
+        """Get predictions from all members in scaled space. Shape: (n_members, n_samples)"""
+        Xs = self.scaler.transform(X)
+        preds = []
+        for member in self.members:
+            member.to(self.device).eval()
+            with torch.no_grad():
+                xb = torch.from_numpy(Xs.astype(np.float32)).to(self.device)
+                pred = torch.nan_to_num(member(xb), nan=0.0, posinf=1e6, neginf=-1e6)
+                preds.append(pred.cpu().numpy())
+            member.cpu()
+        return np.stack(preds, axis=0)
+
+    def predict_mean(self, X: np.ndarray) -> np.ndarray:
+        preds_scaled = self._predict_scaled(X)
+        return preds_scaled.mean(axis=0) * self.y_std + self.y_mean
+
+    def uncertainty(self, X: np.ndarray) -> np.ndarray:
+        """Ensemble predictive variance in original y² units."""
+        preds_scaled = self._predict_scaled(X)
+        var_scaled = preds_scaled.var(axis=0)
+        return np.maximum(var_scaled * (self.y_std ** 2), 1e-12)
+```
+
+
+## Data Acquisition function
+
+
+```python
+def acquire_random(n_pool: int, k: int, rng) -> np.ndarray:
+    """Uniform random selection from the pool."""
+    return rng.choice(
+        n_pool, size=min(k, n_pool), replace=False
+        )
+```
+
+```python
+def acquire_topk_uncertainty(
+    topM_local: np.ndarray,
+    um: np.ndarray,
+    k: int
+) -> np.ndarray:
+    """Select the k most uncertain points."""
+    order = np.argsort(-um)
+    return topM_local[order[:k]]
+```
+
+```python
+def acquire_density(
+    topM_local: np.ndarray,
+    Xm: np.ndarray,
+    um: np.ndarray,
+    k: int,
+    random_state: int,
+    n_neighbors_density: int,
+    density_power: float
+) -> np.ndarray:
+    """Density-weighted acquisition."""
+    n_clusters = min(k, len(topM_local))
+    dens = density_bonus(Xm, n_neighbors_density)
+    scores = um * (dens ** density_power)
+
+    if n_clusters <= 1:
+        return np.array([topM_local[np.argmax(scores)]], dtype=int)
+
+    labels = kmeans_cluster(Xm, n_clusters, random_state)
+    chosen = []
+    for c in range(n_clusters):
+        locs = np.where(labels == c)[0]
+        if locs.size:
+            sel = locs[np.argmax(scores[locs])]
+            chosen.append(topM_local[sel])
+
+    return fill_remaining(chosen, topM_local, scores, k)
+```
+
+## Running AL for 10 rounds
+
+
+Add plots showing RMSE for each round with each acquisition strategy, as well as other
+metrics.
+
+Add heatmap animation for the chosen acquisition strategy.
+
+
+## Conclusions
+Talk about AL being a powerful tool, combined with a data acquisition function that best
+suits our needs, etc. Models can also be more (or less) powerful.
+
+Add link to full notebook in Colab.
