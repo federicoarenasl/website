@@ -57,7 +57,7 @@ export default function Footer() {
             className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
             rel="noopener noreferrer"
             target="_blank"
-            href="mailto:me@federicoarenas.ai"
+            href="mailto:me@federicoarenas.io"
           >
             <ArrowIcon />
             <p className="ml-2 h-7">contact</p>

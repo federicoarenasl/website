@@ -100,21 +100,56 @@ function CustomLink(props) {
 /**
  * Image component with rounded corners, border, and optional caption
  * Centers the image and displays the alt text as a caption below
+ * Uses regular img tag with responsive styling to prevent cropping
+ * Safari-specific fixes applied for proper SVG rendering on iOS
  * @param {Object} props - Image props including alt, src, width, height, etc.
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
+  const { width, height, alt, src, ...restProps } = props
+  const isSvg = typeof src === 'string' && src.endsWith('.svg')
+  
   return (
-    <div className="flex flex-col items-center my-6">
-      <Image 
-        alt={props.alt} 
-        className="rounded-lg border border-gray-300 dark:border-gray-600" 
-        {...props} 
-      />
+    <div className="flex flex-col items-center my-6 w-full">
+      <div 
+        className="rounded-lg border border-gray-300 dark:border-gray-600"
+        style={{ 
+          width: '100%',
+          maxWidth: width ? `${width}px` : '100%',
+          // Safari fix: ensure container doesn't constrain SVG
+          minHeight: isSvg ? 0 : 'auto',
+        }}
+      >
+        <img 
+          alt={alt || ''} 
+          src={src}
+          className="rounded-lg block"
+          style={{ 
+            maxWidth: '100%',
+            width: '100%',
+            height: 'auto',
+            // Safari fix: use contain to prevent cropping
+            objectFit: 'contain',
+            // Safari fix: ensure SVG scales properly
+            ...(isSvg && {
+              maxHeight: 'none',
+              WebkitTransform: 'translateZ(0)', // Force hardware acceleration
+            }),
+            display: 'block'
+          }}
+          // For SVGs, don't set height attribute to let Safari calculate it naturally
+          // For other images, set both width and height
+          width={width}
+          {...(isSvg ? {} : { height })}
+          // Safari fix: loading attribute for better rendering
+          loading="lazy"
+          {...restProps} 
+        />
+      </div>
       {/* Display alt text as caption if provided */}
-      {props.alt && (
+      {alt && (
         <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
-          {props.alt}
+          {alt}
         </p>
       )}
     </div>

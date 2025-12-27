@@ -9,6 +9,7 @@ import { Navbar } from './components/nav'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import Footer from './components/footer'
+import { BackToTop } from './components/back-to-top'
 import { baseUrl } from './sitemap'
 
 /**
@@ -25,6 +26,12 @@ export const metadata: Metadata = {
     template: '%s | Federico Arenas',
   },
   description: 'These are my thoughts.',
+  // Viewport configuration for proper mobile rendering
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
   // Open Graph metadata for social media sharing
   openGraph: {
     title: "Federico Arenas",
@@ -87,6 +94,8 @@ export default function RootLayout({
           {children}
           {/* Site footer */}
           <Footer />
+          {/* Back to top button */}
+          <BackToTop />
           {/* Vercel Analytics for tracking page views and performance */}
           <Analytics />
           {/* Vercel Speed Insights for Core Web Vitals monitoring */}
