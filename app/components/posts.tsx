@@ -24,17 +24,15 @@ export const Posts: React.FC<PostsProps> = ({ mdxPath, urlPath }) => {
         .map((post) => (
           <Link
             key={post.slug}
-            className="flex flex-col space-y-1 mb-4"
+            className="flex flex-row items-center justify-between mb-4"
             href={`${urlPath}/${post.slug}`}
           >
-            <div className="w-full flex flex-row space-x-2">
-              <p className="text-neutral-600 dark:text-neutral-400 w-[100px] tabular-nums">
-                {formatDate(post.metadata.publishedAt, false)}
-              </p>
-              <p className="text-neutral-900 dark:text-neutral-100 tracking-tight">
-                {post.metadata.title}
-              </p>
-            </div>
+            <p className="text-neutral-900 dark:text-neutral-100 max-w-[75%]">
+              {post.metadata.title}
+            </p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm tabular-nums shrink-0">
+              {formatDate(post.metadata.publishedAt)}
+            </p>
           </Link>
         ))}
     </div>
