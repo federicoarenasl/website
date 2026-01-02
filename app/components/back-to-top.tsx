@@ -14,7 +14,7 @@ export function BackToTop() {
   if (!show) return null
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 pointer-events-none">
+    <div className="fixed bottom-6 left-0 right-0 pointer-events-none print-hide">
       <div className="max-w-xl lg:max-w-4xl mx-auto px-4 flex justify-center">
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

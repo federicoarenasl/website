@@ -221,3 +221,81 @@ table {
   @apply bg-green-50 dark:bg-green-950/30 border-green-500 dark:border-green-600;
   @apply text-green-900 dark:text-green-200;
 }
+
+/* Print styles for CV page */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html {
+    font-size: 72%;
+  }
+
+  body {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0cm 0.8cm 1cm 1cm !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide elements when printing */
+  .print-hide,
+  nav#nav,
+  footer {
+    display: none !important;
+  }
+
+  /* Reset dark mode for print */
+  * {
+    color: black !important;
+    background: white !important;
+    border-color: #e5e5e5 !important;
+  }
+
+  .prose a {
+    text-decoration: underline;
+    color: #1a1a1a !important;
+  }
+
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+
+  .prose p,
+  .prose li {
+    color: #1a1a1a !important;
+  }
+
+  /* Prevent page breaks inside list items and paragraphs */
+  .prose li,
+  .prose p {
+    page-break-inside: avoid;
+  }
+
+  /* Print watermark */
+  .print-watermark {
+    position: fixed;
+    bottom: 0.5cm;
+    right: 0.5cm;
+    font-size: 10px;
+    color: #b0b0b0 !important;
+  }
+}
+
+/* Hide watermark on screen */
+.print-watermark {
+  display: none;
+}
+
+@media print {
+  .print-watermark {
+    display: block;
+  }
+}
