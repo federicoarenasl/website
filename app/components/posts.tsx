@@ -24,7 +24,7 @@ export const Posts: React.FC<PostsProps> = ({ mdxPath, urlPath }) => {
         .map((post) => (
           <Link
             key={post.slug}
-            className="flex flex-row items-center justify-between mb-4"
+            className="flex flex-row items-start sm:items-center justify-between mb-4"
             href={`${urlPath}/${post.slug}`}
           >
             <p className="text-neutral-900 dark:text-neutral-100 max-w-[75%]">
