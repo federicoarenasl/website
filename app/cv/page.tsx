@@ -1,7 +1,7 @@
 import { readMDXFile } from 'app/utils'
 import { CustomMDX } from 'app/components/mdx/mdx'
 import path from 'path'
-import { PrintButton, PrintWatermark } from './print-button'
+import { PdfLink, PrintWatermark } from './print-button'
 
 export const metadata = {
   title: 'CV',
@@ -15,7 +15,7 @@ export default function Page() {
     <section>
       <div className="flex items-center gap-2 mb-8">
         <h1 className="font-semibold text-2xl tracking-tighter">{metadata.title}</h1>
-        <PrintButton />
+        <PdfLink />
       </div>
       <article className="prose">
         <CustomMDX source={content} />

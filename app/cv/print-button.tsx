@@ -1,18 +1,16 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
-export function PrintButton() {
-  const handlePrint = () => {
-    window.print()
-  }
-
+export function PdfLink() {
   return (
-    <button
-      onClick={handlePrint}
+    <Link
+      href="/cv.pdf"
+      target="_blank"
       className="print-hide p-1 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors flex items-center justify-center"
-      aria-label="Print CV"
-      title="Print CV"
+      aria-label="Open CV as PDF"
+      title="Open CV as PDF"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -25,11 +23,10 @@ export function PrintButton() {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <polyline points="6 9 6 2 18 2 18 9" />
-        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-        <rect x="6" y="14" width="12" height="8" />
+        <path d="M7 7h10v10" />
+        <path d="M7 17L17 7" />
       </svg>
-    </button>
+    </Link>
   )
 }
 
