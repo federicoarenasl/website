@@ -332,7 +332,7 @@ trainer.train()
 The model will be fine-tuned for 10000 iterations, evaluating on the real-world validation set every 100 steps and logging metrics to Weights & Biases.
 
 <Image
-  src="/train_loss.png"
+  src="/fine-tune-detr-2/train_loss.png"
   alt="Fine-tuning loss curve showing steady decline over 10,000 steps"
   width={500}
   height={315}
@@ -344,7 +344,7 @@ Much like the plot above, you should see the training loss showing a steady decl
 Encouragingly, by looking at the evaluation loss calculated against the real-world validation dataset, our evaluation loss shows a steady decline, indicating that our DETR model is able to generalize to a real-world domain, when trained using synthetic data generated with our `sdg-engine` package.
 
 <Image
-  src="/eval_loss.png"
+  src="/fine-tune-detr-2/eval_loss.png"
   alt="Evaluation loss on real-world validation data"
   width={500}
   height={315}
@@ -352,7 +352,7 @@ Encouragingly, by looking at the evaluation loss calculated against the real-wor
 
 Moreover, by looking at our mean Average Precision (mAP) we are able to see how well the model is doing at correctly predicting the correct classes across our entire validation dataset. 
 <Image
-  src="/eval_map.png"
+  src="/fine-tune-detr-2/eval_map.png"
   alt="Mean Average Precision (mAP) metric progression during fine-tuning"
   width={500}
   height={315}
@@ -362,7 +362,7 @@ Even though we see a steady improvement, the model's performance saturates at cl
 
 
 <Image
-  src="/trained_demo.gif"
+  src="/fine-tune-detr-2/trained_demo.gif"
   alt="Fine-tuned DETR model detecting objects in the Homebrew dataset"
   width={500}
   height={315}
@@ -371,7 +371,7 @@ Even though we see a steady improvement, the model's performance saturates at cl
 From the qualitative results above, we see that our model is able to detect the Minion and the Butter quite well, but struggles with the Toy Cow and the Stapler! From further investigation, this is clearly reflected in our model's mean Average Precision for each individual object.
 
 <Image
-  src="/individual_eval_map.png"
+  src="/fine-tune-detr-2/individual_eval_map.png"
   alt="Our trained model's mAP across each of the classes"
   width={500}
   height={315}

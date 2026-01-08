@@ -1,0 +1,172 @@
+---
+title: 'Using Graph Convolutional Networks to generate synthetic data in Unity'
+publishedAt: '2026-01-01'
+summary: 'Leveraging Graph Convolutional Networks to automatically generate synthetic 3D data in Unity that closely matches a desired target dataset.'
+---
+Synthetic Data Generation using rendering engines is a time-consuming endeavor, with the biggest bottlenecks being creating the 3D scenes, as well as laying out the different elements of the scene as would be found in the target domain. The MetaSim [] architecture introduced in 2021 (way back when I completed my MSc) uses a Graph Convolutional Network to learn the distribution of the target domain and modify the scene in the rendering engine accordingly, so that the generated data is as faithful as possible to the target domain it will be used in.
+
+This short write-up summarizes my MSc thesis focusing on investigating how well the MetaSim architecture adapts to the Unity game engine and a different open source dataset focused on everyday objects, from the TYO-L dataset [1]. I discovered that while the architecture can work and succesfully modify the scene in Unity to match a target distribution, it remains a brittle method and requires extensive hyperparameter tuning. I use an adapted version of Kar et al. [2] code found [here](https://github.com/nv-tlabs/meta-sim).
+
+## The meta-sim architecture
+This architecture represents a 3D environment in a rendering engine as a graph. It uses a Graph Convolutional Network (GCN) to learn the graph structure, and then uses a 3D rendering engine to generate images from the graph. The architecture is trained using a Maximum Mean Discrepancy (MMD) loss, which is a measure of distance between two distributions. 
+
+The learning objective is generating images from a source distribution that are as close as possible to a target distribution, while using a standard rendering engine such as Unity
+
+<Image
+  src="/gcn-unity-sdg/meta_sim_architecture.png"
+  alt="Meta-sim architecture diagram showing the GCN learning pipeline"
+  width={700}
+  height={400}
+/>
+
+We define multiple scene attributes that can be used to modify the scene. We also define a set of classes, the available objects in the scene, and the camera, lighting, background, scene and image. The latter are nodes in the scene, while the former are node poperties for the available objects.
+
+<Image
+  src="/gcn-unity-sdg/3D_scene_structure.png"
+  alt="3D scene structure showing nodes and properties in Unity"
+  width={700}
+  height={400}
+/>
+
+
+### Graph Convolutional Network autoencoder
+
+The MetaSim architecture can be understood as a GCN autoencoder, we have an encoder GCN that learns the representation of the graph which represents the scene in the rendering engine, and a decoder which is able to generate graph representations of the scene that can then be used to lay out the scene in the rendering engine.
+
+The encoder and decoder GCNs are identical, differing only in their output dimensions, and are defined below as a `torch.nn.Module` containing multiple `GraphConvolution` layers. A graph convolution updates a node's features by aggregating information from its neighbors in the graph, allowing the network to learn both the properties of individual objects and the relationships between them—essential for capturing the structure of a scene.
+
+```python
+class GCN(nn.Module):
+    """Graph Convolutional Network with variable number of layers."""
+
+    def __init__(self, dims: List[int], dropout: Optional[float] = None) -> None:
+        """Initialize a multi-layer GCN with specified layer output sizes and optional dropout."""
+        super(GCN, self).__init__()
+        self.dims = dims
+        self.n_layers = len(dims) - 1
+        assert self.n_layers > 0
+
+        layers: List[nn.Module] = []
+        for l in range(self.n_layers):
+            layers.append(GraphConvolution(dims[l], dims[l+1]))
+        self.layers = nn.ModuleList(layers)
+        self.dropout = dropout
+
+    def forward(self, x: Tensor, adj: Tensor) -> Tensor:
+        """Forward pass through GCN layers with ReLU activations and optional dropout."""
+        for l in range(self.n_layers - 1):
+            x = self.layers[l](x, adj)
+            x = F.relu(x)
+            if self.dropout is not None:
+                x = F.dropout(x, self.dropout, training=self.training)
+        x = self.layers[-1](x, adj)
+        return x
+```
+
+Finally, the encoder-decoder architecture is defined as such below:
+
+```python
+class MetaSim(nn.Module):
+  def __init__(self, opts: dict, dropout: float = None) -> None:
+    """Initializes the MetaSim model and its components."""
+    super(MetaSim, self).__init__()
+    self.opts = opts
+    # Read grammar from json file
+    self.cfg = read_json(opts['config'])
+    # Feed grammar to generator
+    g = get_generator(opts['dataset'])
+    self.generator = g(self.cfg)
+    # Initalize model
+    self.init_model(dropout)
+
+  def init_model(self, dropout: float = None) -> None:
+    """Initializes GCN encoder and decoder modules."""
+    self.get_feature_length()
+    # Initialize GCN encoder
+    self.encoder = GCN([self.in_feature_len, 30, 18], dropout)
+    # Initialize GCN decoder
+    self.decoder = GCN([18, 30, self.in_feature_len], dropout)
+
+  ...
+
+  def forward(
+    self,
+    x: torch.Tensor,
+    adj: torch.Tensor,
+    masks: object = None,
+    sample: bool = False
+  ) -> tuple[torch.Tensor, torch.Tensor]:
+    """Performs a forward pass through the MetaSim model."""
+    # Encode sampled graph
+    enc = self.encoder(x, adj) # x batches of graphs of size, (b, n_nodes, feature_size), feature_size = n_nodes+n_attributes
+
+    # Decode generated graph, node 0 = image, node 1 = scene, node 2 =  background, node 3 = object
+    dec = self.decoder(enc, adj) # [[0.9, 0.033, 0.033, 0.033, loc_x=-0.01, loc_y=.., .., ..],[, , , , , , ,],[, , , , , , ,],[, , , , , , ,]]
+
+    # Apply sigmoid on all continuous parameters and softmax on classes
+    dec_act = torch.cat((
+      torch.softmax(dec[..., :self.num_classes], dim=-1),
+      torch.sigmoid(dec[..., self.num_classes:])
+    ), dim=-1)
+
+    return dec, dec_act
+...
+```
+
+> Note: These models have been adapted from https://github.com/nv-tlabs/meta-sim, authored by: Amlan Kar, Aayush Prakash, Ming-Yu Liu, Eric Cameracci, Justin Yuan, Matt Rusiniak, David Acuna, Antonio Torralba and Sanja Fidler.
+
+### **Sample results learning to rotate a single asset**
+During training, the architecture is learning to rotate a single object 90 degrees based on a target dataset whose distribution is centered around 90 degrees. 
+We can see this in the following animations:
+
+We can see the generated images:
+
+<Image
+  src="/gcn-unity-sdg/G2G_images.png"
+  alt="Generated images showing rotation learning progress"
+  width={1000}
+  height={300}
+/>
+
+And the generated mean convergence towards the mean of the target distribution:
+
+<Image
+  src="/gcn-unity-sdg/G2G_yawdist.png"
+  alt="Yaw distribution convergence towards target distribution"
+  width={1000}
+  height={300}
+/>
+
+### **Sample results learning to rotate a single asset from a pool of multiple ones**
+We extended the learning task to for the network to learn more degrees of freedom to match the target image. In this case, the network is learning to rotate and choose a single object from a pool of multiple ones to match the target
+
+In the example below the network learns to select the right asset and rotate it to a 90 degree angle:
+
+<Image
+  src="/gcn-unity-sdg/multi_1attr_images.png"
+  alt="Network learning to select and rotate asset from multiple options"
+  width={1000}
+  height={300}
+/>
+
+### **Sample results learning to rotate and move a single asset from a pool of multiple ones**
+We extended the learning task to for the network to learn more degrees of freedom to match the target image. In this case, the network is learning to rotate and move a single object from a pool of multiple ones.
+
+In the example below, the network learns to select the right asset, and move it to the right position.
+
+<Image
+  src="/gcn-unity-sdg/multi_5attr_images.png"
+  alt="Network learning to select, rotate and position asset"
+  width={1000}
+  height={300}
+/>
+
+
+## Conclusions
+My study demonstrates that while the MetaSim architecture can successfully generate synthetic data in Unity, it struggles with scalability and reproducibility. The learning process proved highly fragile when applied to a new 3D scene different from the original study—hyperparameters that worked in one setting rarely transferred to another. 
+
+Rendering speed and parallel processing are essential for practical training, but even with these in place, the architecture's sensitivity to configuration makes it difficult to deploy reliably across different domains. Future work addressing learning stability under complex settings could unlock the broader potential of GCN-based synthetic data generation.
+
+> [1] Hodaň, T., Michel, F., Brachmann, E., Kehl, W., Buch, A. G., Kraft, D., Drost, B., Vidal, J., Ihrke, S., Zabulis, X., Sahin, C., Manhardt, F., Tombari, F., Kim, T. K., Matas, J., & Rother, C. (2018). BOP: Benchmark for 6D object pose estimation. Lecture Notes in Computer Science (Including Subseries Lecture Notes in Artificial Intelligence and Lecture Notes in Bioinformatics), 11214 LNCS, 19–35. https://doi.org/10.1007/978-3-030-01249-6_2
+
+> [2] Kar, A., Prakash, A., Liu, M. Y., Cameracci, E., Yuan, J., Rusiniak, M., Acuna, D., Torralba, A., & Fidler, S. (2019). Meta-sim: Learning to generate synthetic datasets. Proceedings of the IEEE International Conference on Computer Vision, 2019-Octob, 4550–4559. https://doi.org/10.1109/ICCV.2019.00465
