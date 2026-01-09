@@ -37,87 +37,73 @@ The encoder and decoder GCNs are identical, differing only in their output dimen
 
 ```python
 class GCN(nn.Module):
-    """Graph Convolutional Network with variable number of layers."""
+  """Graph Convolutional Network with variable number of layers."""
+  def __init__(self, dims: List[int], dropout: Optional[float]=None) -> None:
+    """Initialize a multi-layer GCN with specified dims and optional dropout."""
+    super().__init__()
+    self.dims = dims
+    self.n_layers = len(dims) - 1
+    assert self.n_layers > 0
+    self.layers = nn.ModuleList([
+      GraphConvolution(dims[i], dims[i+1])
+      for i in range(self.n_layers)
+    ])
+    self.dropout = dropout
 
-    def __init__(self, dims: List[int], dropout: Optional[float] = None) -> None:
-        """Initialize a multi-layer GCN with specified layer output sizes and optional dropout."""
-        super(GCN, self).__init__()
-        self.dims = dims
-        self.n_layers = len(dims) - 1
-        assert self.n_layers > 0
-
-        layers: List[nn.Module] = []
-        for l in range(self.n_layers):
-            layers.append(GraphConvolution(dims[l], dims[l+1]))
-        self.layers = nn.ModuleList(layers)
-        self.dropout = dropout
-
-    def forward(self, x: Tensor, adj: Tensor) -> Tensor:
-        """Forward pass through GCN layers with ReLU activations and optional dropout."""
-        for l in range(self.n_layers - 1):
-            x = self.layers[l](x, adj)
-            x = F.relu(x)
-            if self.dropout is not None:
-                x = F.dropout(x, self.dropout, training=self.training)
-        x = self.layers[-1](x, adj)
-        return x
+  def forward(self, x: Tensor, adj: Tensor) -> Tensor:
+    """Forward pass through GCN layers with ReLU and optional dropout."""
+    for i in range(self.n_layers - 1):
+      x = self.layers[i](x, adj)
+      x = F.relu(x)
+      if self.dropout: x = F.dropout(x, self.dropout, training=self.training)
+    x = self.layers[-1](x, adj)
+    return x
 ```
 
-Finally, the encoder-decoder architecture is defined as such below:
+Encoder-decoder architecture:
 
 ```python
 class MetaSim(nn.Module):
-  def __init__(self, opts: dict, dropout: float = None) -> None:
+  def __init__(self, opts: dict, dropout: float=None) -> None:
     """Initializes the MetaSim model and its components."""
-    super(MetaSim, self).__init__()
+    super().__init__()
     self.opts = opts
-    # Read grammar from json file
     self.cfg = read_json(opts['config'])
-    # Feed grammar to generator
     g = get_generator(opts['dataset'])
     self.generator = g(self.cfg)
-    # Initalize model
     self.init_model(dropout)
 
-  def init_model(self, dropout: float = None) -> None:
+  def init_model(self, dropout: float=None) -> None:
     """Initializes GCN encoder and decoder modules."""
     self.get_feature_length()
-    # Initialize GCN encoder
     self.encoder = GCN([self.in_feature_len, 30, 18], dropout)
-    # Initialize GCN decoder
     self.decoder = GCN([18, 30, self.in_feature_len], dropout)
 
-  ...
+  # ...
 
   def forward(
     self,
     x: torch.Tensor,
     adj: torch.Tensor,
-    masks: object = None,
-    sample: bool = False
+    masks: object=None,
+    sample: bool=False
   ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Performs a forward pass through the MetaSim model."""
-    # Encode sampled graph
-    enc = self.encoder(x, adj) # x batches of graphs of size, (b, n_nodes, feature_size), feature_size = n_nodes+n_attributes
-
-    # Decode generated graph, node 0 = image, node 1 = scene, node 2 =  background, node 3 = object
-    dec = self.decoder(enc, adj) # [[0.9, 0.033, 0.033, 0.033, loc_x=-0.01, loc_y=.., .., ..],[, , , , , , ,],[, , , , , , ,],[, , , , , , ,]]
-
-    # Apply sigmoid on all continuous parameters and softmax on classes
+    """Performs a forward pass through MetaSim."""
+    enc = self.encoder(x, adj)
+    dec = self.decoder(enc, adj)
     dec_act = torch.cat((
       torch.softmax(dec[..., :self.num_classes], dim=-1),
       torch.sigmoid(dec[..., self.num_classes:])
     ), dim=-1)
-
     return dec, dec_act
 ...
+```
 ```
 
 > Note: These models have been adapted from https://github.com/nv-tlabs/meta-sim, authored by: Amlan Kar, Aayush Prakash, Ming-Yu Liu, Eric Cameracci, Justin Yuan, Matt Rusiniak, David Acuna, Antonio Torralba and Sanja Fidler.
 
 ### **Sample results learning to rotate a single asset**
 During training, the architecture is learning to rotate a single object 90 degrees based on a target dataset whose distribution is centered around 90 degrees. 
-We can see this in the following animations:
 
 We can see the generated images:
 
