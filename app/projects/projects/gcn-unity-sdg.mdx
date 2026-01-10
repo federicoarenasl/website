@@ -63,7 +63,7 @@ class GCN(nn.Module):
 Encoder-decoder architecture:
 
 ```python
-class MetaSim(nn.Module):
+class GCNAutoencoder(nn.Module):
   def __init__(self, opts: dict, dropout: float=None) -> None:
     """Initializes the MetaSim model and its components."""
     super().__init__()
@@ -98,11 +98,10 @@ class MetaSim(nn.Module):
     return dec, dec_act
 ...
 ```
-```
 
-> Note: These models have been adapted from https://github.com/nv-tlabs/meta-sim, authored by: Amlan Kar, Aayush Prakash, Ming-Yu Liu, Eric Cameracci, Justin Yuan, Matt Rusiniak, David Acuna, Antonio Torralba and Sanja Fidler.
+> Note: These models have been adapted from https://github.com/nv-tlabs/meta-sim.
 
-### **Sample results learning to rotate a single asset**
+## **Learning to rotate a single asset**
 During training, the architecture is learning to rotate a single object 90 degrees based on a target dataset whose distribution is centered around 90 degrees. 
 
 We can see the generated images:
@@ -114,7 +113,7 @@ We can see the generated images:
   height={300}
 />
 
-And the generated mean convergence towards the mean of the target distribution:
+And the mean of the generated distribution shifting towards the mean of the target distribution:
 
 <Image
   src="/gcn-unity-sdg/G2G_yawdist.png"
@@ -123,7 +122,7 @@ And the generated mean convergence towards the mean of the target distribution:
   height={300}
 />
 
-### **Sample results learning to rotate a single asset from a pool of multiple ones**
+## **Learning to pick and rotate the right asset from a pool of multiple assets**
 We extended the learning task to for the network to learn more degrees of freedom to match the target image. In this case, the network is learning to rotate and choose a single object from a pool of multiple ones to match the target
 
 In the example below the network learns to select the right asset and rotate it to a 90 degree angle:
@@ -135,10 +134,10 @@ In the example below the network learns to select the right asset and rotate it 
   height={300}
 />
 
-### **Sample results learning to rotate and move a single asset from a pool of multiple ones**
+## **Learning to pick, rotate and move a single asset from a pool of multiple assets**
 We extended the learning task to for the network to learn more degrees of freedom to match the target image. In this case, the network is learning to rotate and move a single object from a pool of multiple ones.
 
-In the example below, the network learns to select the right asset, and move it to the right position.
+In the example below, the network learns to select the right asset, and move it to the right position at the bottom right corner.
 
 <Image
   src="/gcn-unity-sdg/multi_5attr_images.png"
