@@ -6,8 +6,8 @@ type Metadata = {
   publishedAt: string
   summary: string
   image?: string
-  /** When true, post is still browsable at /projects/[slug] but omitted from the projects list page. */
-  hiddenFromList?: boolean
+  /** When true (or "true" from frontmatter), post is still browsable at /projects/[slug] but omitted from the projects list page. */
+  hiddenFromList?: boolean | string
 }
 
 function parseFrontmatter(fileContent: string) {
