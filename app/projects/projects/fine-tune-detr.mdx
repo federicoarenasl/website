@@ -4,30 +4,41 @@ publishedAt: '2025-12-14'
 summary: 'A walkthrough of generating synthetic object detection data in Blender with sdg-engine and fine-tuning a DETR model, with full training curves and qualitative results.'
 ---
 
-_This is an updated version of the blog I made years ago on generating synthetic data with Blender to fine-tune a YOLO model, if you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
+> _This is an updated version of the blog I made years ago on generating synthetic data with Blender to fine-tune a YOLO model, if you're looking for that blog, you can find it [here](https://federicoarenasl.github.io/sdg-engine/)._
 
-Synthetic data is a powerful tool to get Machine Learning practitioners off the ground fast into a working model that can perform the task sufficiently well. In this post I walk through a concrete object detection setup: generating training data with Blender via the [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package, fine-tuning a DEtection TRansformer (DETR) with HuggingFace 🤗 `transformers` and `datasets`, and evaluating on real-world data from the _"BOP: Benchmark for 6D Object Pose Estimation"_ [1].
+Synthetic data is a powerful tool to get Machine Learning practitioners off the ground fast into a working model that can perform the task sufficiently well, while saving resources on data annotation.
 
-I use the _"HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects"_ [2] — specifically scene No. 3 — as both the visual reference for the synthetic scene and the source of labelled validation data, so we can measure how well the model generalizes from synthetic to real images.
+In this post I'll walk through a concrete object detection setup: generating training data with Blender via the [sdg-engine](https://github.com/federicoarenasl/sdg-engine) package, fine-tuning a DEtection TRansformer (DETR) with HuggingFace 🤗 `transformers` and `datasets`, and evaluating on real-world data from the _"BOP: Benchmark for 6D Object Pose Estimation"_ [1].
+
+I'll use the _"HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects"_ [2] — specifically scene No. 3 — as both the visual reference for the synthetic scene and the source of labelled validation data, so I can measure how well the model generalizes from synthetic to real images directly on an open source dataset.
 
 <Image
   src="/fine-tune-detr-1/hb-dataset-sample.gif"
   alt="Sample from the Homebrew BOP dataset showing 4 different objects on a rotating platform"
-  width={480}
-  height={315}
+  width={320}
+  height={250}
 />
 
 ## Introduction
 
-The pipeline has two main phases: (1) prepare a real-world validation set and generate a synthetic training set in Blender, and (2) fine-tune DETR on the synthetic data and evaluate on the real-world set. Both datasets are stored as HuggingFace imagefolder datasets and pushed to the Hub for easy loading during training.
+The pipeline has two main phases: (1) preparing a real-world validation set and generating a synthetic training set in Blender, and (2) fine-tuning DETR on the synthetic dataset and evaluate it on the real-world dataset. Both datasets are stored as HuggingFace imagefolder datasets and pushed to the Hub for easy interoperability.
 
-A more detailed, step-by-step tutorial is available in two parts: [Part 1 — Generate data using Blender](/projects/fine-tune-detr-1) and [Part 2 — Fine-tune DETR](/projects/fine-tune-detr-2). Questions or comments: [github.com/federicoarenasl/sdg-engine/issues](https://github.com/federicoarenasl/sdg-engine/issues).
+A more detailed, step-by-step tutorial is available in two parts: [Part 1 — Generate data using Blender](/projects/fine-tune-detr-1) and [Part 2 — Fine-tune DETR](/projects/fine-tune-detr-2), this includes all code details for reproducibility.
 
 ## Validation data and synthetic data generation
 
-The Homebrew dataset provides real-world ground truth; without it we wouldn't be able to properly measure performance on the target domain. I download the BOP validation data, convert it into an [imagefolder](https://huggingface.co/docs/datasets/en/image_dataset#imagefolder) with COCO-style annotations (bounding boxes, categories, areas), and push it to the Hub with `private=True` to respect BOP distribution terms.
+The Homebrew dataset provides real-world ground truth; without it we wouldn't be able to properly measure performance on the target domain. In order to make the dataset interoperable, I downloaded the BOP validation data and converted it into an [imagefolder](https://huggingface.co/docs/datasets/en/image_dataset#imagefolder) with COCO-style annotations (bounding boxes, categories, areas), then pushed it to the Hub as a private reposotory.
 
-For synthetic data, sdg-engine needs a Blender scene and a YAML config that describes how to sample it. The scene I use is a simple replica of the Homebrew setup (camera, lights, a few objects). The config drives resolution, visibility checks, and a parameter sweep (yaw, roll, camera height, etc.):
+Then, to generate the training synthetic data, sdg-engine needs a Blender scene and a YAML config that describes how to sample it. The scene I use is a simple replica of the Homebrew setup (camera, lights, a few objects), which can be seen below.
+
+<Image
+  src="/fine-tune-detr-1/hb-blender-scene.png"
+  alt="Quick overview of the HB Blender scene"
+  width={600}
+  height={315}
+/>
+
+The config below drives resolution, visibility checks, and a parameter sweep (yaw, roll, camera height, etc.):
 
 ```yaml
 # Excerpt from bop-hb-small.config.yaml
@@ -51,26 +62,57 @@ sweep_config:
   camera_height_limits: [0.5, 1.5]
 ```
 
-<Image
-  src="/fine-tune-detr-1/hb-blender-scene.png"
-  alt="Quick overview of the HB Blender scene"
-  width={600}
-  height={315}
-/>
-
-Generation is a single command; the output is an imagefolder that can be pushed to the Hub the same way as the validation set.
+Finally, I generated the data with a single command; the output is an imagefolder that can be pushed to the Hub the same way as the validation set.
 
 ```bash
 poetry run python -m sdg_engine.main --config synthetic-bop-homebrew-scene-3-small.config.yaml
 ```
 
-I refrained from spending too much time on photorealism here; improving the scene is one of the main levers for boosting the fine-tuned model later.
+> Tip: I refrained from spending too much time on photorealism here; improving the scene is one of the main levers for boosting the fine-tuned model later.
 
 ## Fine-tuning DETR
 
-With both datasets on the Hub, I load them and prepare an `image_processor` from the `facebook/detr-resnet-50-dc5` checkpoint so that inputs match what the pretrained model expects. Data augmentation is done with `albumentations` (horizontal flip, brightness/contrast, rotation, scale, blur, noise); the validation set is only resized/padded to a fixed size so evaluation stays close to the real-world distribution. Transformations are applied to both images and bounding boxes so labels stay aligned.
+With both datasets on the Hub, I loaded them and prepared an `image_processor` from the `facebook/detr-resnet-50-dc5` checkpoint so that inputs match what the pretrained model expects. 
 
-Model and training setup:
+```python
+from transformers import AutoImageProcessor
+
+checkpoint = "facebook/detr-resnet-50-dc5"
+image_processor = AutoImageProcessor.from_pretrained(checkpoint)
+
+```
+
+Data augmentation is done with `albumentations` (horizontal flip, brightness/contrast, rotation, scale, blur, noise); 
+the validation set is only resized/padded to a fixed size so evaluation stays close to the real-world distribution. Transformations are applied to both images and bounding boxes so labels stay aligned.
+
+```python
+import albumentations as A
+
+train_transform = A.Compose(
+    [
+        A.LongestMaxSize(500),
+        A.PadIfNeeded(500, 500, border_mode=0, value=(0, 0, 0)),
+        A.HorizontalFlip(p=0.5),
+        A.RandomBrightnessContrast(p=0.5),
+        A.HueSaturationValue(p=0.5),
+        A.Rotate(limit=10, p=0.5),
+        A.RandomScale(scale_limit=0.2, p=0.5),
+        A.GaussianBlur(p=0.5),
+        A.GaussNoise(p=0.5),
+    ],
+    bbox_params=A.BboxParams(format="coco", label_fields=["categories"]),
+)
+
+test_transform = A.Compose(
+    [
+        A.LongestMaxSize(500),
+        A.PadIfNeeded(500, 500, border_mode=0, value=(0, 0, 0)),
+    ],
+    bbox_params=A.BboxParams(format="coco", label_fields=["categories"]),
+)
+```
+
+Finally, with all of this in order, we can train the `DetrForObjectDetection` model from the `transformers` library. Evaluation uses TorchMetrics' Mean Average Precision (mAP) on the real world dataset; the progress of this training run is logged using Weights & Biases. 
 
 ```python
 from transformers import DetrForObjectDetection, TrainingArguments, Trainer
@@ -105,20 +147,17 @@ trainer = Trainer(
 trainer.train()
 ```
 
-Evaluation uses TorchMetrics' Mean Average Precision (mAP); I log training and validation metrics to Weights & Biases. The collate function pads batches of images and passes through labels in the format DETR expects.
-
 ## Results
 
-Training loss decreases steadily over the 10k steps. The curve is a bit jumpy; a smaller learning rate or batch size could smooth it.
+This is the fun bit, here's where we can verify that our model is able to generalize from synthetic data to the real world task. From looking at the training loss we see a continuous decrease over the 10k steps. The curve is a bit jumpy; a smaller learning rate or batch size could smooth it, but learning is happening.
 
 <Image
   src="/fine-tune-detr-2/train_loss.png"
   alt="Fine-tuning loss curve showing steady decline over 10,000 steps"
-  width={500}
-  height={315}
+  width={100}
 />
 
-Evaluation loss on the real-world validation set also decreases, which indicates that the model is generalizing from synthetic to real data.
+This is not enough to determine whether generalization is happening though. Inspecting the evaluation loss on the real-world validation set we also see a steady decrease, which indicates that the model is generalizing from synthetic to real data.
 
 <Image
   src="/fine-tune-detr-2/eval_loss.png"
@@ -127,7 +166,7 @@ Evaluation loss on the real-world validation set also decreases, which indicates
   height={315}
 />
 
-Mean Average Precision (mAP) improves over training and then saturates at around **mAP ≈ 0.67**. That’s enough to show that the pipeline works and that synthetic data plus DETR can transfer to this real-world setting, but still below what I’d want for a production-ready detector.
+Now when looking at the domain-specific metric, Mean Average Precision (mAP), we see that it improves and then saturates at around **mAP ≈ 0.67**. This shows that the pipeline works and that synthetic data plus DETR can transfer to this real-world setting, but still below what's usable in a production-ready detector.
 
 <Image
   src="/fine-tune-detr-2/eval_map.png"
@@ -156,7 +195,9 @@ Per-class mAP makes that clear: Toy Cow and Stapler lag behind. That suggests fo
 
 ## Conclusions
 
-We went from a concrete real-world object detection task to generating synthetic training data in Blender with sdg-engine, fine-tuning DETR with HuggingFace, and evaluating on the real-world BOP Homebrew validation set. The model generalizes to the target domain and reaches about mAP ≈ 0.67, with clear headroom via better data balance, diversity, and scene quality. I encourage you to try the [full two-part tutorial](/projects/fine-tune-detr-1) and to outperform this baseline — and to share what worked for you.
+This blogpost demonstrated went from a concrete real-world object detection task to generating synthetic training data in Blender with sdg-engine, fine-tuning DETR with HuggingFace, and evaluating on the real-world BOP Homebrew validation set. 
+
+The model generalizes to the target domain and reaches about mAP ≈ 0.67, with clear headroom via better data balance, diversity, and scene quality. I encourage you to try the [full two-part tutorial](/projects/fine-tune-detr-1) and to outperform this baseline — and to share what worked for you!
 
 > [1] [BOP Benchmark – 6D Object Pose Estimation](https://bop.felk.cvut.cz/home/). If you're working on 6D pose estimation, you'll almost certainly run into BOP. It's the go-to benchmark for comparing methods, with well-defined datasets, metrics, and evaluation scripts.
 
