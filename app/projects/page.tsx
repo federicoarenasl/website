@@ -2,7 +2,7 @@ import { Posts } from 'app/components/posts'
 import { PATH_TO_PROJECT_MDX } from 'app/sitemap'
 
 export const metadata = {
-  title: 'Project',
+  title: 'Projects',
   description: 'Browse through some of my personal projects.',
 }
 
