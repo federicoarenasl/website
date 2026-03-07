@@ -6,6 +6,8 @@ type Metadata = {
   publishedAt: string
   summary: string
   image?: string
+  /** When true, post is still browsable at /projects/[slug] but omitted from the projects list page. */
+  hiddenFromList?: boolean
 }
 
 function parseFrontmatter(fileContent: string) {

@@ -8,7 +8,9 @@ type PostsProps = {
 }
 
 export const Posts: React.FC<PostsProps> = ({ mdxPath, urlPath }) => {
-  let allBlogs = collectMDXData(mdxPath)
+  let allBlogs = collectMDXData(mdxPath).filter(
+    (post) => !post.metadata.hiddenFromList
+  )
 
   return (
     <div>
