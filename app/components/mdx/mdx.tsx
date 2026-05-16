@@ -111,9 +111,9 @@ function RoundedImage(props) {
   
   return (
     <div className="flex flex-col items-center my-6 w-full">
-      <div 
-        className="rounded-lg border border-gray-300 dark:border-gray-600"
-        style={{ 
+      <div
+        className="rounded-lg"
+        style={{
           width: '100%',
           maxWidth: width ? `${width}px` : '100%',
           // Safari fix: ensure container doesn't constrain SVG
