@@ -26,15 +26,17 @@ export const Posts: React.FC<PostsProps> = ({ mdxPath, urlPath }) => {
         .map((post) => (
           <Link
             key={post.slug}
-            className="flex flex-row items-start sm:items-center justify-between mb-4"
+            className="flex flex-col mb-6 group"
             href={`${urlPath}/${post.slug}`}
           >
-            <p className="text-neutral-900 dark:text-neutral-100 max-w-[75%]">
+            <p className="text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors">
               {post.metadata.title}
             </p>
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm tabular-nums shrink-0">
-              {formatDate(post.metadata.publishedAt)}
-            </p>
+            {post.metadata.summary && (
+              <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
+                {post.metadata.summary}
+              </p>
+            )}
           </Link>
         ))}
     </div>

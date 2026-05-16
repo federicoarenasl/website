@@ -6,6 +6,7 @@ type Metadata = {
   publishedAt: string
   summary: string
   image?: string
+  github?: string
   /** When true (or "true" from frontmatter), post is still browsable at /projects/[slug] but omitted from the projects list page. */
   hiddenFromList?: boolean | string
 }
@@ -40,11 +41,11 @@ export function formatDate(date: string) {
     }
     let targetDate = new Date(date)
     
-    let day = String(targetDate.getDate()).padStart(2, '0')
-    let month = String(targetDate.getMonth() + 1).padStart(2, '0')
-    let year = targetDate.getFullYear()
-    
-    return `${day}-${month}-${year}`
+    return targetDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
   }
   
 

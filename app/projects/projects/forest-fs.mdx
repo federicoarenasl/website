@@ -1,0 +1,87 @@
+---
+title: '森 forest, a knowledge layer for your Slack workspace'
+publishedAt: '2026-05-16'
+summary: 'A self-hosted Slack bot that passively captures files and links shared in your workspace, uses an LLM to organize them into a virtual folder tree, and lets you browse or search them with a simple mention command.'
+github: https://github.com/federicoarenas/forest-fs
+---
+
+Teams share files constantly in chat — a Figma mockup here, a Google Doc there, a PDF dropped into a thread. Nobody organizes them. They just sink. A week later someone asks "where's that design spec?" and everyone starts digging through Slack history.
+
+`森 forest` is a small self-hosted service that sits in your Slack workspace, listens passively, and builds a folder tree from whatever gets shared — without anyone having to do anything.
+
+<Image
+  src="/forest-fs/forest-flow.png"
+  alt="Teams share files in Slack — forest listens and organizes them into a knowledge layer."
+  width={700}
+  height={400}
+/>
+
+The project is released under AGPL-3.0: free to use, modify, and self-host; modifications must stay open if you run it as a network service.
+
+> Source and full documentation: [github.com/forest-fs/forest](https://github.com/forest-fs/forest).
+
+## What it does
+
+When a message containing a link or file attachment lands in a channel forest is watching, it:
+
+1. Extracts the URL and any surrounding context from the thread.
+2. Sends it to an LLM (via any OpenAI-compatible API) to decide what the file is about and where it belongs in the workspace's folder tree.
+3. Stores the file, its summary, and an embedding in Postgres.
+
+From there you can browse the full tree with `@forest show`, or ask for a file by context with `@forest find`:
+
+<Image
+  src="/forest-fs/forest-show.png"
+  alt="@forest show displays the full workspace knowledge tree directly in Slack."
+  width={700}
+  height={400}
+/>
+
+The key design choice is **passivity** — forest doesn't ask users to tag, label, or move anything. It just watches and classifies. The overhead for the team is zero.
+
+## Architecture
+
+Forest is a single Python process (FastAPI + Uvicorn) with two responsibilities: receiving Slack webhook events and serving mention commands. Everything else is layered behind that:
+
+The ingest pipeline is fire-and-forget: Slack delivers the event, the handler verifies the signing secret, kicks off `process_ingest` as an async task, and immediately returns 200. This keeps webhook response times under Slack's 3-second deadline regardless of LLM latency.
+
+<Image
+  src="/forest-fs/ingest-pipeline.svg"
+  alt="Forest ingest pipeline: Slack event → FastAPI (200 immediately) → async task: LLM chat routes the file to a folder path and writes a summary, LLM embed turns that summary into a vector, then both are stored in PostgreSQL with pgvector."
+  width={780}
+  height={270}
+/>
+
+Storage is PostgreSQL with the `pgvector` extension. Each file gets a summary (text) and an embedding (vector), which are the foundation for semantic search — letting you ask "the UI mockup Tim and I looked at last week" rather than needing to remember a filename.
+
+The LLM boundary is kept thin: all chat and embedding calls go through a single `LLMService` wrapping the `AsyncOpenAI` client. Pointing it at a different provider is one environment variable (`LLM_BASE_URL`), so you can use OpenRouter, direct OpenAI, Azure, or a local Ollama instance interchangeably.
+
+
+## Self-hosting
+
+Forest ships as a Docker image. The full stack is a `docker compose up` away:
+
+```bash
+cp .env.example .env   # fill in Slack tokens + LLM API key
+docker compose up --build
+```
+
+For remote deployment it's a single container + managed Postgres — ECS/App Runner on AWS or Cloud Run on GCP both work out of the box. The README has step-by-step CLI commands for both.
+
+
+## If this were on the Slack App Directory
+
+In a fully managed deployment, the FastAPI server and PostgreSQL instance are ours to run — workspaces just install the app and never touch any infrastructure.
+
+A workspace admin finds forest on the Slack App Directory, clicks *Add to Slack*, and completes the standard OAuth flow. That creates a `Workspace` row in our shared database, scoped to their Slack team ID. Every piece of data — file nodes, embeddings, folder tree — is isolated behind that workspace ID, so there's no cross-tenant leakage.
+
+From there the admin invites `@forest` to the channels they want monitored and runs `@forest init`. Forest scans the readable message history across all joined channels, builds the initial folder tree via the LLM, and posts a summary back when done. After that, passive ingest runs automatically on every new message with a link or attachment — no further action needed from anyone.
+
+<Image
+  src="/forest-fs/managed-deployment.svg"
+  alt="Managed deployment: multiple Slack workspaces install via OAuth and fan into a single shared FastAPI server, which writes to a PostgreSQL database isolated per workspace_id and calls an external LLM API for chat and embeddings."
+  width={780}
+  height={310}
+/>
+
+The shared infrastructure means we absorb the operational overhead (container health, database migrations, LLM API keys, rate-limit handling) while users get a zero-config Slack bot. The tradeoff versus self-hosting is data residency: files and embeddings live in our database rather than the team's own cloud account, which is why the self-hosted path exists under AGPL-3.0.

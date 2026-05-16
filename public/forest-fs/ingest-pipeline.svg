@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 270" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#495057"/>
+    </marker>
+    <marker id="arr-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#adb5bd"/>
+    </marker>
+  </defs>
+
+  <rect width="780" height="270" fill="#ffffff" rx="8"/>
+
+  <!-- Sync layer -->
+  <text x="28" y="24" font-size="11" fill="#adb5bd" letter-spacing="0.3">synchronous</text>
+
+  <!-- Slack -->
+  <rect x="28" y="32" width="122" height="56" rx="8" fill="#fff3bf" stroke="#f59f00" stroke-width="1.5"/>
+  <text x="89" y="57" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1e1e">Slack</text>
+  <text x="89" y="75" text-anchor="middle" font-size="12" fill="#555">message event</text>
+
+  <!-- Slack → FastAPI -->
+  <line x1="150" y1="60" x2="177" y2="60" stroke="#495057" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- FastAPI -->
+  <rect x="177" y="32" width="172" height="56" rx="8" fill="#d0ebff" stroke="#339af0" stroke-width="1.5"/>
+  <text x="263" y="57" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1e1e">FastAPI</text>
+  <text x="263" y="75" text-anchor="middle" font-size="12" fill="#555">/slack/events → 200</text>
+
+  <!-- Spawn arrow -->
+  <line x1="263" y1="88" x2="263" y2="162" stroke="#adb5bd" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-g)"/>
+  <text x="273" y="122" font-size="11" fill="#adb5bd" font-style="italic">spawn · per cue</text>
+
+  <!-- Async boundary -->
+  <rect x="28" y="137" width="726" height="118" rx="10" fill="#f8f9fa" stroke="#ced4da" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="46" y="157" font-size="11" fill="#adb5bd" letter-spacing="0.3">async task</text>
+
+  <!-- LLM Chat -->
+  <rect x="177" y="164" width="150" height="60" rx="8" fill="#e5dbff" stroke="#7950f2" stroke-width="1.5"/>
+  <text x="252" y="188" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1e1e">LLM chat</text>
+  <text x="252" y="206" text-anchor="middle" font-size="11" fill="#555">route to path · summarise</text>
+
+  <!-- LLM Chat → LLM Embed -->
+  <line x1="327" y1="194" x2="353" y2="194" stroke="#495057" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- LLM Embed -->
+  <rect x="353" y="164" width="148" height="60" rx="8" fill="#e5dbff" stroke="#7950f2" stroke-width="1.5"/>
+  <text x="427" y="188" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1e1e">LLM embed</text>
+  <text x="427" y="206" text-anchor="middle" font-size="11" fill="#555">embed summary → vector</text>
+
+  <!-- LLM Embed → Postgres -->
+  <line x1="501" y1="194" x2="527" y2="194" stroke="#495057" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- PostgreSQL + pgvector -->
+  <rect x="527" y="164" width="200" height="60" rx="8" fill="#c3fae8" stroke="#0ca678" stroke-width="1.5"/>
+  <text x="627" y="186" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1e1e">PostgreSQL + pgvector</text>
+  <text x="627" y="204" text-anchor="middle" font-size="11" fill="#555">path · summary · embedding</text>
+
+  <!-- Idempotency note -->
+  <text x="46" y="236" font-size="10.5" fill="#adb5bd">idempotent: unique (workspace_id, external_key) — safe to replay</text>
+</svg>
