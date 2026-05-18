@@ -8,7 +8,7 @@ export function PdfLink() {
     <Link
       href="/cv.pdf"
       target="_blank"
-      className="print-hide p-1 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors flex items-center justify-center"
+      className="print-hide p-1 text-neutral-400 hover:text-neutral-600 transition-colors flex items-center justify-center"
       aria-label="Open CV as PDF"
       title="Open CV as PDF"
     >

@@ -93,18 +93,18 @@ export function CodeBlock({ children, language, className, ...props }: CodeBlock
   }
   
   return (
-    <div className="my-6 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="my-6 rounded-lg border border-gray-200 overflow-hidden">
       {/* Top bar with language and copy button */}
       <div className="flex items-center justify-between px-4 pt-2 pb-1">
         {/* Language label */}
-        <span className="text-xs font-mono text-gray-600 dark:text-gray-400">
+        <span className="text-xs font-mono text-gray-600">
           {language || 'text'}
         </span>
         
         {/* Copy to clipboard button */}
         <button
           onClick={copyToClipboard}
-          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200"
+          className="text-gray-600 hover:text-gray-900 transition-colors duration-200"
           title="Copy to clipboard"
         >
           {copied ? (
@@ -150,7 +150,7 @@ interface InlineCodeProps {
 export function InlineCode({ children, className, ...props }: InlineCodeProps) {
   return (
     <code 
-      className={`bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono ${className || ''}`}
+      className={`bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono ${className || ''}`}
       {...props}
     >
       {children}

@@ -29,7 +29,7 @@ export function Giscus() {
 
   return (
     <div className="mt-16">
-      <hr className="border-neutral-200 dark:border-neutral-800 mb-12" />
+      <hr className="border-neutral-200 mb-12" />
       <div ref={ref} />
     </div>
   )

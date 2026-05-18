@@ -101,9 +101,9 @@ export function FootnoteReference({ id, children }: FootnoteReferenceProps) {
     if (footnoteElement) {
       footnoteElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
       // Add a temporary highlight effect
-      footnoteElement.classList.add('bg-yellow-100', 'dark:bg-yellow-900')
+      footnoteElement.classList.add('bg-yellow-100', 'bg-yellow-200')
       setTimeout(() => {
-        footnoteElement.classList.remove('bg-yellow-100', 'dark:bg-yellow-900')
+        footnoteElement.classList.remove('bg-yellow-100', 'bg-yellow-200')
       }, 2000)
     }
   }
@@ -112,7 +112,7 @@ export function FootnoteReference({ id, children }: FootnoteReferenceProps) {
     <sup>
       <button
         onClick={scrollToFootnote}
-        className="text-gray-900 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-400 cursor-pointer font-medium transition-colors duration-200 opacity-80 hover:opacity-100"
+        className="text-gray-900 hover:text-gray-600 cursor-pointer font-medium transition-colors duration-200 opacity-80 hover:opacity-100"
         aria-label={`Go to footnote ${number}`}
       >
         [{number}]
@@ -138,23 +138,23 @@ export function FootnoteDefinition({ id, children }: FootnoteDefinitionProps) {
     if (referenceElement) {
       referenceElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
       // Add a temporary highlight effect
-      referenceElement.classList.add('bg-yellow-100', 'dark:bg-yellow-900')
+      referenceElement.classList.add('bg-yellow-100', 'bg-yellow-200')
       setTimeout(() => {
-        referenceElement.classList.remove('bg-yellow-100', 'dark:bg-yellow-900')
+        referenceElement.classList.remove('bg-yellow-100', 'bg-yellow-200')
       }, 2000)
     }
   }
 
   return (
-    <div id={`fn-${id}`} className="flex gap-2 py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+    <div id={`fn-${id}`} className="flex gap-2 py-2 border-b border-gray-200 last:border-b-0">
       <button
         onClick={scrollToReference}
-        className="text-gray-900 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-400 cursor-pointer font-medium flex-shrink-0 transition-colors duration-200 opacity-80 hover:opacity-100 self-start"
+        className="text-gray-900 hover:text-gray-600 cursor-pointer font-medium flex-shrink-0 transition-colors duration-200 opacity-80 hover:opacity-100 self-start"
         aria-label={`Go back to reference ${number}`}
       >
         [{number}]
       </button>
-      <div className="text-sm text-gray-700 dark:text-gray-300">
+      <div className="text-sm text-gray-700">
         {children}
       </div>
     </div>
@@ -168,8 +168,8 @@ export function FootnoteList() {
   if (footnotes.length === 0) return null
 
   return (
-    <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <div className="mt-12 pt-6 border-t border-gray-200">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
         Footnotes
       </h3>
       <div className="space-y-1">

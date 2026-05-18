@@ -148,7 +148,7 @@ function RoundedImage(props) {
       </div>
       {/* Display alt text as caption if provided */}
       {alt && (
-        <p className="text-sm italic text-gray-600 dark:text-gray-400 mt-2 text-center">
+        <p className="text-sm italic text-gray-600 mt-2 text-center">
           {alt}
         </p>
       )}

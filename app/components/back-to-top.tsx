@@ -18,7 +18,7 @@ export function BackToTop() {
       <div className="max-w-xl lg:max-w-4xl mx-auto px-4 flex justify-center">
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="pointer-events-auto p-2 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors"
+          className="pointer-events-auto p-2 text-neutral-500 hover:text-neutral-900 transition-colors"
           aria-label="Back to top"
         >
           ↑
