@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import p5 from "p5";
 
 /**
@@ -10,21 +10,9 @@ import p5 from "p5";
 const P5Wrapper = () => {
   // Reference to the div element where the p5 canvas will be attached
   const sketchRef = useRef<HTMLDivElement>(null);
-  // State to track if dark mode is enabled
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const isDarkMode = false;
 
   useEffect(() => {
-    // Check for dark mode preference
-    const matchMedia = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDarkMode(matchMedia.matches);
-
-    // Event handler for theme change
-    const handleThemeChange = (event: MediaQueryListEvent) => {
-      setIsDarkMode(event.matches);
-    };
-
-    // Add event listener for changes in the color scheme
-    matchMedia.addEventListener("change", handleThemeChange);
 
     /**
      * p5.js sketch function
@@ -118,12 +106,10 @@ const P5Wrapper = () => {
     // Create a new p5 instance with the sketch
     const myP5 = new p5(sketch, sketchRef.current!);
 
-    // Cleanup function to remove p5 instance and event listener
     return () => {
       myP5.remove();
-      matchMedia.removeEventListener("change", handleThemeChange);
     };
-  }, [isDarkMode]);
+  }, []);
 
   // Render the div that will contain the p5 canvas
   return <div ref={sketchRef} className="absolute top-0 right-0 my-6 z-0" />;

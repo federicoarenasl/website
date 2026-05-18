@@ -29,17 +29,7 @@ export function CodeBlock({ children, language, className, ...props }: CodeBlock
   // State to track if code has been copied to clipboard
   const [copied, setCopied] = useState(false)
   const [highlightedCode, setHighlightedCode] = useState<string>('')
-  const [isDark, setIsDark] = useState(false)
-  
-  // Detect and track dark mode preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    setIsDark(mediaQuery.matches)
-    
-    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
-    mediaQuery.addEventListener('change', handler)
-    return () => mediaQuery.removeEventListener('change', handler)
-  }, [])
+  const isDark = false
   
   useEffect(() => {
     const highlightCode = async () => {
