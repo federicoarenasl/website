@@ -24,6 +24,14 @@ html {
   color-scheme: light;
 }
 
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: light;
+    background-color: white;
+    color: black;
+  }
+}
+
 .prose .anchor {
   @apply absolute invisible no-underline;
 

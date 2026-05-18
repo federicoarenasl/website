@@ -42,6 +42,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   // Search engine crawler directives
+  colorScheme: 'light',
   robots: {
     index: true, // Allow search engines to index this site
     follow: true, // Allow search engines to follow links
@@ -78,8 +79,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={cx(
-        // Base color scheme with dark mode support
-        'text-black bg-white dark:text-white dark:bg-black',
+        'text-black bg-white',
         // Apply Geist font variables for CSS custom properties
         GeistSans.variable,
         GeistMono.variable
