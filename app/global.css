@@ -47,11 +47,11 @@ html {
 }
 
 .prose a {
-  @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
+  @apply underline transition-all decoration-neutral-400 underline-offset-2 decoration-[0.1em];
 }
 
 .prose .anchor:after {
-  @apply text-neutral-300 dark:text-neutral-700;
+  @apply text-neutral-300;
   content: '#';
 }
 
@@ -60,7 +60,7 @@ html {
 }
 
 .prose pre {
-  @apply bg-neutral-50 dark:bg-neutral-900 rounded-lg overflow-x-auto border border-neutral-200 dark:border-neutral-900 py-2 px-3 text-sm;
+  @apply bg-neutral-50 rounded-lg overflow-x-auto border border-neutral-200 py-2 px-3 text-sm;
 }
 
 .prose code {
@@ -94,7 +94,7 @@ html {
 }
 
 .prose p {
-  @apply my-4 text-neutral-800 dark:text-neutral-200;
+  @apply my-4 text-neutral-800;
 }
 
 .prose h1 {
@@ -192,26 +192,26 @@ table {
 
 /* Default blockquote style */
 .prose blockquote.custom-blockquote.default {
-  @apply bg-neutral-50 dark:bg-neutral-900 border-neutral-400 dark:border-neutral-600;
-  @apply text-neutral-700 dark:text-neutral-300;
+  @apply bg-neutral-50 border-neutral-400;
+  @apply text-neutral-700;
 }
 
 /* Note style */
 .prose blockquote.custom-blockquote.note {
-  @apply bg-blue-50 dark:bg-blue-950/30 border-blue-500 dark:border-blue-600;
-  @apply text-blue-900 dark:text-blue-200;
+  @apply bg-blue-50 border-blue-500;
+  @apply text-blue-900;
 }
 
 /* Warning style */
 .prose blockquote.custom-blockquote.warning {
-  @apply bg-amber-50 dark:bg-amber-950/30 border-amber-500 dark:border-amber-600;
-  @apply text-amber-900 dark:text-amber-200;
+  @apply bg-amber-50 border-amber-500;
+  @apply text-amber-900;
 }
 
 /* Tip style */
 .prose blockquote.custom-blockquote.tip {
-  @apply bg-green-50 dark:bg-green-950/30 border-green-500 dark:border-green-600;
-  @apply text-green-900 dark:text-green-200;
+  @apply bg-green-50 border-green-500;
+  @apply text-green-900;
 }
 
 /* Print styles for CV page */
