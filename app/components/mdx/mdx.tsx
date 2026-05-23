@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import React from 'react'
 import { CodeBlock, InlineCode } from '../ui/code-block'
+import { ImageLightbox } from '../ui/image-lightbox'
 import { FootnoteProvider, FootnoteReference, FootnoteDefinition, FootnoteList, parseFootnotes } from './footnotes'
 import { TextWithFootnotes, ProcessedParagraph, extractFootnotesFromContent } from './footnote-utils'
 
@@ -106,9 +107,9 @@ function CustomLink(props) {
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
-  const { width, height, alt, src, ...restProps } = props
+  const { width, height, alt, src } = props
   const isSvg = typeof src === 'string' && src.endsWith('.svg')
-  
+
   return (
     <div className="flex flex-col items-center my-6 w-full">
       <div
@@ -116,37 +117,17 @@ function RoundedImage(props) {
         style={{
           width: '100%',
           maxWidth: width ? `${width}px` : '100%',
-          // Safari fix: ensure container doesn't constrain SVG
           minHeight: isSvg ? 0 : 'auto',
         }}
       >
-        <img 
-          alt={alt || ''} 
+        <ImageLightbox
           src={src}
-          className="rounded-lg block"
-          style={{ 
-            maxWidth: '100%',
-            width: '100%',
-            height: 'auto',
-            // Safari fix: use contain to prevent cropping
-            objectFit: 'contain',
-            // Safari fix: ensure SVG scales properly
-            ...(isSvg && {
-              maxHeight: 'none',
-              WebkitTransform: 'translateZ(0)', // Force hardware acceleration
-            }),
-            display: 'block'
-          }}
-          // For SVGs, don't set height attribute to let Safari calculate it naturally
-          // For other images, set both width and height
+          alt={alt}
           width={width}
-          {...(isSvg ? {} : { height })}
-          // Safari fix: loading attribute for better rendering
-          loading="lazy"
-          {...restProps} 
+          height={height}
+          isSvg={isSvg}
         />
       </div>
-      {/* Display alt text as caption if provided */}
       {alt && (
         <p className="text-sm italic text-gray-600 mt-2 text-center">
           {alt}
