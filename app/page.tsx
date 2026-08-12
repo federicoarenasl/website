@@ -6,8 +6,8 @@ export default function Page() {
         Hey there, I'm Federico Arenas.
       </h1>
       <p className="mb-4">
-        {`Currently Senior AI Engineer at `}
-        <a 
+        {`AI Engineer at `}
+        <a
           href="https://www.materiom.org"
           target="_blank"
           rel="noopener noreferrer"
@@ -15,13 +15,13 @@ export default function Page() {
         >
           Materiom
         </a>
-        {`. Leading the development of data-intensive applications that utilize AI to accelerate bio-based material innovation.`}
+        {`, where I build machine learning systems and closed-loop pipelines to accelerate scientific discovery across bio-based materials. My work focuses on bridging high-throughput in-silico simulations, geometric deep learning, and automated physical lab experimentation.`}
       </p>
       <p className="mb-4">
-        {`Previously contributed to early-stage AI startups in the self-driving space, computer vision space, and entreprise data space.`}
+        {`Previously, I built autonomous vehicle validation platforms, synthetic data engines using game engines, and scalable ML infrastructure at early-stage startups.`}
       </p>
       <p className="mb-4">
-        {`I find balance through running, philosophy, and my guitar.`}
+        {`Outside of engineering, I find balance through running, philosophy, and playing guitar.`}
       </p>
       <p className="mb-4">
         {`Based in London. Feel free to reach out.`}

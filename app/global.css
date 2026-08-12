@@ -8,6 +8,15 @@
 }
 
 :root {
+  /* Shared reading column for every page (lists, articles, CV).
+     672px minus the 1rem body gutters leaves ~640px of text, which is roughly
+     75-80 characters per line at the 16px body size — the 45-75 range from
+     Bringhurst, and inside the 80-character ceiling of WCAG 1.4.8. */
+  --content-width: 672px;
+  /* How far a .breakout block may extend past the column on each side.
+     672 + 2 x 96 = 864px, hence the min viewport in the .breakout media query. */
+  --breakout-gutter: 96px;
+
   --sh-class: #2d5e9d;
   --sh-identifier: #354150;
   --sh-sign: #8996a3;
@@ -82,6 +91,24 @@ html {
   @apply m-0;
 }
 
+/* Opt-in escape hatch for wide diagrams: lets a block extend past the reading
+   column by --breakout-gutter on each side. Uses negative margins rather than
+   a transform, because a transformed ancestor would break the position:fixed
+   lightbox overlay rendered inside it. */
+.prose .breakout {
+  width: auto;
+  margin-left: calc(-1 * var(--breakout-gutter));
+  margin-right: calc(-1 * var(--breakout-gutter));
+}
+
+/* Below the width where both gutters fit, keep breakout blocks in the column. */
+@media (max-width: 880px) {
+  .prose .breakout {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 /* Safari iOS fix for SVG images - prevents cropping */
 /* -webkit-touch-callout is Safari-specific, so this targets iOS Safari */
 @supports (-webkit-touch-callout: none) {
@@ -91,6 +118,15 @@ html {
     object-fit: contain !important;
     -webkit-transform: translateZ(0); /* Force hardware acceleration */
   }
+}
+
+/* Left-aligned, never justified: browsers stretch word spaces without the
+   whole-paragraph line breaking that makes justified print work, and WCAG 1.4.8
+   rules out full justification. `pretty` keeps the ragged edge but lets the
+   browser reflow the closing lines to avoid orphans and stub last lines. */
+.prose p,
+.prose li {
+  text-wrap: pretty;
 }
 
 .prose p {
@@ -148,11 +184,46 @@ input[type='email'] {
   appearance: none;
 }
 
-table {
-  display: block;
-  max-width: fit-content;
-  overflow-x: auto;
-  white-space: nowrap;
+/* Tables are wrapped in .table-scroll by the MDX `table` override, which owns
+   the outer rule and the horizontal scroll. The cells then only draw the
+   internal grid, so the outline never doubles up at the edges.
+   Borders match the neutral-200 / neutral-50 pairing used by .prose pre. */
+.prose .table-scroll {
+  @apply my-6 overflow-x-auto rounded-lg border border-neutral-200;
+}
+
+.prose table {
+  @apply w-full text-sm;
+
+  border-collapse: collapse;
+}
+
+.prose th,
+.prose td {
+  @apply px-4 py-3 text-left align-top border-b border-neutral-200;
+
+  /* The old rule set nowrap globally, which clipped wide tables instead of
+     letting prose-y cells reflow. Long cells now wrap; only tables that are
+     genuinely too wide scroll. */
+  white-space: normal;
+}
+
+.prose th {
+  @apply bg-neutral-50 font-medium text-neutral-900;
+}
+
+.prose td {
+  @apply text-neutral-800;
+}
+
+/* Column separators, and no trailing rule above the wrapper's bottom border. */
+.prose th + th,
+.prose td + td {
+  @apply border-l border-neutral-200;
+}
+
+.prose tbody tr:last-child td {
+  @apply border-b-0;
 }
 
 .title {

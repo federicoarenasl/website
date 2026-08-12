@@ -85,7 +85,7 @@ export default function RootLayout({
         GeistMono.variable
       )}
     >
-      <body className="antialiased max-w-xl mx-auto px-4 mt-8 lg:max-w-4xl">
+      <body className="antialiased max-w-[var(--content-width)] mx-auto px-4 mt-8">
         {/* Main content container with responsive layout */}
         <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0">
           {/* Site navigation */}

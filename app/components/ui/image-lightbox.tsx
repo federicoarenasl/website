@@ -5,8 +5,6 @@ import React, { useEffect, useState, useCallback, useRef } from 'react'
 type ImageLightboxProps = {
   src: string
   alt?: string
-  width?: number | string
-  height?: number | string
   isSvg?: boolean
 }
 
@@ -18,7 +16,7 @@ type Transform = { scale: number; x: number; y: number }
 
 const IDENTITY: Transform = { scale: 1, x: 0, y: 0 }
 
-export function ImageLightbox({ src, alt, width, height, isSvg }: ImageLightboxProps) {
+export function ImageLightbox({ src, alt, isSvg }: ImageLightboxProps) {
   const [open, setOpen] = useState(false)
   const [transform, setTransform] = useState<Transform>(IDENTITY)
   const imgRef = useRef<HTMLImageElement | null>(null)
@@ -223,8 +221,6 @@ export function ImageLightbox({ src, alt, width, height, isSvg }: ImageLightboxP
           }),
           display: 'block',
         }}
-        width={width as number | undefined}
-        {...(isSvg ? {} : { height: height as number | undefined })}
         loading="lazy"
       />
 

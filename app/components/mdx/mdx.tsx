@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import remarkGfm from 'remark-gfm'
 import React from 'react'
 import { CodeBlock, InlineCode } from '../ui/code-block'
 import { ImageLightbox } from '../ui/image-lightbox'
@@ -38,6 +39,23 @@ function processMDXFootnotes(content: string, footnotes: Array<{ id: string; con
 }
 
 /**
+ * Wraps every table in a scroll container that owns the outer border and
+ * rounded corners, so a table too wide for the reading column scrolls on its
+ * own rather than overflowing the page
+ * Used for both markdown pipe tables (via the `table` component override) and
+ * the legacy <Table data={...} /> component
+ * @param {Object} props - Standard table element props
+ * @returns {JSX.Element} Table inside its scroll container
+ */
+function StyledTable(props) {
+  return (
+    <div className="table-scroll">
+      <table {...props} />
+    </div>
+  )
+}
+
+/**
  * Table component for rendering structured data in MDX content
  * @param {Object} data - Table data object containing headers and rows
  * @param {string[]} data.headers - Array of header strings
@@ -60,12 +78,12 @@ function Table({ data }) {
   ))
 
   return (
-    <table>
+    <StyledTable>
       <thead>
         <tr>{headers}</tr>
       </thead>
       <tbody>{rows}</tbody>
-    </table>
+    </StyledTable>
   )
 }
 
@@ -99,32 +117,52 @@ function CustomLink(props) {
 }
 
 /**
+ * Normalises a width/height value into a CSS length
+ * Bare numbers ("400" or 400) become pixels; anything else (e.g. "60%", "24rem")
+ * is passed through untouched
+ * @param {number|string} value - Raw dimension from MDX
+ * @returns {string|undefined} CSS length, or undefined when no value was given
+ */
+function toCssLength(value) {
+  if (value === undefined || value === null || value === '') return undefined
+  return /^\d+(\.\d+)?$/.test(String(value)) ? `${value}px` : String(value)
+}
+
+/**
  * Image component with rounded corners, border, and optional caption
  * Centers the image and displays the alt text as a caption below
  * Uses regular img tag with responsive styling to prevent cropping
+ * The `width` prop caps the rendered size (the image still shrinks on narrow
+ * screens) and the height always follows from the file's intrinsic aspect
+ * ratio, so any `height` passed from MDX is deliberately ignored — a declared
+ * height that disagrees with the real ratio only causes a layout jump
+ * Pass `breakout` to let a wide diagram extend past the reading column
  * Safari-specific fixes applied for proper SVG rendering on iOS
- * @param {Object} props - Image props including alt, src, width, height, etc.
+ * @param {Object} props - Image props including alt, src, width, breakout, etc.
  * @returns {JSX.Element} Styled image container with optional caption
  */
 function RoundedImage(props) {
-  const { width, height, alt, src } = props
+  const { width, alt, src, breakout } = props
   const isSvg = typeof src === 'string' && src.endsWith('.svg')
+  const maxWidth = toCssLength(width)
 
   return (
-    <div className="flex flex-col items-center my-6 w-full">
+    <div
+      className={`flex flex-col items-center my-6 w-full${
+        breakout ? ' breakout' : ''
+      }`}
+    >
       <div
         className="rounded-lg"
         style={{
           width: '100%',
-          maxWidth: width ? `${width}px` : '100%',
+          maxWidth: maxWidth ?? '100%',
           minHeight: isSvg ? 0 : 'auto',
         }}
       >
         <ImageLightbox
           src={src}
           alt={alt}
-          width={width}
-          height={height}
           isSvg={isSvg}
         />
       </div>
@@ -249,6 +287,20 @@ function createHeading(level) {
 }
 
 /**
+ * Serialization options shared by every MDX render.
+ * - blockJS: next-mdx-remote v6 blocks JS expressions by default, which
+ *   silently strips JSX attribute expressions such as `width={400}`. Our MDX
+ *   is first-party content from this repo, not untrusted input, so expressions
+ *   are re-enabled (blockDangerousJS stays on).
+ * - remarkGfm: adds GitHub-flavoured markdown — pipe tables, strikethrough,
+ *   task lists and bare-URL autolinks. Plain MDX supports none of these.
+ */
+const serializeOptions = {
+  blockJS: false,
+  mdxOptions: { remarkPlugins: [remarkGfm] },
+}
+
+/**
  * Component mapping object for MDX rendering
  * Maps HTML elements and custom components to their React counterparts
  */
@@ -264,6 +316,7 @@ let components = {
   code: InlineCode,
   pre: Pre,
   blockquote: CustomBlockquote,
+  table: StyledTable,
   Table,
   FootnoteReference,
   FootnoteDefinition,
@@ -303,6 +356,7 @@ export function CustomMDX(props) {
         <MDXRemote
           source={processedContent}
           components={enhancedComponents}
+          options={serializeOptions}
         />
         <FootnoteList />
       </FootnoteProvider>
@@ -315,6 +369,7 @@ export function CustomMDX(props) {
       <MDXRemote
         {...props}
         components={{ ...components, ...(props.components || {}) }}
+        options={{ ...serializeOptions, ...(props.options || {}) }}
       />
       <FootnoteList />
     </FootnoteProvider>
@@ -333,6 +388,7 @@ export function CustomMDXLegacy(props) {
       <MDXRemote
         {...props}
         components={{ ...components, ...(props.components || {}) }}
+        options={{ ...serializeOptions, ...(props.options || {}) }}
       />
       <FootnoteList />
     </FootnoteProvider>

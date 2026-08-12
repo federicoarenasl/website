@@ -52,17 +52,6 @@ export default function Footer() {
             <p className="ml-2 h-7">contact</p>
           </a>
         </li>
-        <li>
-          <a
-            className="flex items-center transition-all hover:text-neutral-600"
-            rel="noopener noreferrer"
-            target="_blank"
-            href="/cv"
-          >
-            <ArrowIcon />
-            <p className="ml-2 h-7">cv</p>
-          </a>
-        </li>
       </ul>
       <p className="mt-8 text-neutral-800">
         © {new Date().getFullYear()} MIT Licensed
