@@ -166,8 +166,11 @@ function RoundedImage(props) {
           isSvg={isSvg}
         />
       </div>
+      {/* w-full is what makes text-left bite: the caption is a flex item in an
+          items-center column, so without it the paragraph shrinks to its content and
+          stays centred. */}
       {alt && (
-        <p className="text-sm italic text-gray-600 mt-2 text-center">
+        <p className="image-caption w-full">
           {alt}
         </p>
       )}
