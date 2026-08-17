@@ -12,6 +12,11 @@ import Footer from './components/footer'
 import { BackToTop } from './components/back-to-top'
 import { baseUrl } from './sitemap'
 
+// Single source of truth for the site description shown in search results
+// and in link preview cards
+const siteDescription =
+  'AI Engineer with developing AI systems to accelerate scientific discovery.'
+
 /**
  * Metadata configuration for the entire application
  * Defines SEO settings, Open Graph data, and robot directives
@@ -25,21 +30,41 @@ export const metadata: Metadata = {
     // Template for page-specific titles (e.g., "Blog Post | Federico Arenas")
     template: '%s | Federico Arenas',
   },
-  description: 'These are my thoughts.',
+  description: siteDescription,
   // Viewport configuration for proper mobile rendering
   viewport: {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 5,
   },
+  // Note: the favicon comes from the app/icon.svg file convention, which
+  // Next.js emits as <link rel="icon"> and which takes precedence over any
+  // `icons` field declared here. The same mark is drawn into the Open Graph
+  // preview card by app/og/route.tsx.
   // Open Graph metadata for social media sharing
   openGraph: {
     title: "Federico Arenas",
-    description: 'These are my thoughts.',
+    description: siteDescription,
     url: baseUrl,
     siteName: "Federico Arenas",
     locale: 'en_US',
     type: 'website',
+    // Preview card image: the site mark plus name and description
+    images: [
+      {
+        url: `${baseUrl}/og?title=${encodeURIComponent('Federico Arenas')}`,
+        width: 1200,
+        height: 630,
+        alt: 'Federico Arenas',
+      },
+    ],
+  },
+  // Twitter/X uses its own tags; mirror the Open Graph card
+  twitter: {
+    card: 'summary_large_image',
+    title: "Federico Arenas",
+    description: siteDescription,
+    images: [`${baseUrl}/og?title=${encodeURIComponent('Federico Arenas')}`],
   },
   // Search engine crawler directives
   colorScheme: 'light',
