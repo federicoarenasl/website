@@ -12,10 +12,14 @@ export function Giscus() {
     script.src = 'https://giscus.app/client.js'
     script.async = true
     script.crossOrigin = 'anonymous'
+    // Reactions and comments are stored as GitHub Discussions in this repo.
+    // The two IDs are GitHub's GraphQL node IDs; giscus needs them to create a
+    // discussion on the first comment or reaction, so leaving them blank makes
+    // every reaction silently fail even for signed-in visitors.
     script.setAttribute('data-repo', 'federicoarenasl/website')
-    script.setAttribute('data-repo-id', '') // Get from giscus.app
+    script.setAttribute('data-repo-id', 'R_kgDOM_is4g')
     script.setAttribute('data-category', 'Announcements')
-    script.setAttribute('data-category-id', '') // Get from giscus.app
+    script.setAttribute('data-category-id', 'DIC_kwDOM_is4s4DDk_0')
     script.setAttribute('data-mapping', 'pathname')
     script.setAttribute('data-strict', '0')
     script.setAttribute('data-reactions-enabled', '1')
