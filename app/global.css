@@ -122,11 +122,14 @@ html {
 
 /* Left-aligned, never justified: browsers stretch word spaces without the
    whole-paragraph line breaking that makes justified print work, and WCAG 1.4.8
-   rules out full justification. `pretty` keeps the ragged edge but lets the
-   browser reflow the closing lines to avoid orphans and stub last lines. */
+   rules out full justification.
+
+   `text-wrap: pretty` was removed here. It reflows a paragraph to avoid orphans, and
+   Safari pays for that by pulling every line in short, so body copy visibly stopped
+   before the column edge while headings and figures ran the full width. */
 .prose p,
 .prose li {
-  text-wrap: pretty;
+  text-wrap: initial;
 }
 
 .prose p {

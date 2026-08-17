@@ -34,8 +34,7 @@ To evaluate the baseline design, I measure the average number of unique sources 
 <Image
   src="/mas-for-materials-research/s1-single-agent-baseline.svg"
   alt="Left: materials and unique sources retrieved per question across thinking budgets, shown against the target for each. Right: rate of responses containing fabricated citations & rate of citations that were fabricated."
-  width={700}
-  height={420}
+  width={672}
 />
 
 There are two things to note: (1) the baseline system is below target in source diversity, regardless of thinking budget, and (2) the baseline system is happy to generate made-up URLs to back some of the responses.
@@ -98,8 +97,7 @@ By introducing structured outputs and the `redact_hallucinations_callback`, the 
 <Image
   src="/mas-for-materials-research/s2-callback-hallucination.svg"
   alt="Responses containing a fabricated citation and citations that were fabricated, with and without the redaction callback and structured output."
-  width={600}
-  height={325}
+  width={672}
 />
 
 
@@ -107,8 +105,7 @@ By introducing structured outputs and the `redact_hallucinations_callback`, the 
 <Image
   src="/mas-for-materials-research/multi-agent-system.svg"
   alt="Multi-agent architecture: a cohort of ResearchAgents queries the materials database in parallel through the SQL toolset, and a SynthesisAgent merges their findings into one grounded response."
-  width={700}
-  height={400}
+  width={672}
 />
 
 The second priority is addressing the issue of insufficient sources and materials per response. The system should surface numerous unique materials coming from varied reputable sources, to support researchers' decision making process. 
@@ -165,8 +162,7 @@ This change now makes it possible to track the direct relationship between the n
 <Image
   src="/mas-for-materials-research/s3-cohort-vs-single.svg"
   alt="Materials and unique sources per question, plus ingredient and source diversity scores, for the single agent alongside the three-agent cohort."
-  width={600}
-  height={280}
+  width={672}
 />
 
 
@@ -182,8 +178,7 @@ For simplicity, the two main levers to pull are number of agents, and the thinki
 <Image
   src="/mas-for-materials-research/s4-tradeoffs.svg"
   alt="Retrieval per question, cost per question and sequential latency, across the number of parallel research agents (top) and across thinking budgets for the three-agent cohort (bottom)."
-  width={780}
-  height={552}
+  width={672}
 />
 
 This type of metrics-driven view makes it easy to spot the trade-offs: 3 agents let the system stay within target both in cost & latency, but also in performance. When 3 agents are locked in and the thinking budget is dialed up, it becomes clear that while it doesn't affect system performance, it does affect cost & latency.
