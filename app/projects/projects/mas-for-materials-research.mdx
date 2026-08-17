@@ -4,21 +4,21 @@ publishedAt: '2026-08-01'
 summary: 'An evaluations-first approach to building reliable agentic systems for scientific discovery using Google's Agent Development Kit.'
 ---
 
-AI research agents are becoming the workhorse of AI-assited scientific discovery; an agentic system that has access to data sources, and is able to conduct long-form research to provide the user with a response, grounded in exhaustive and comprehensive research, without compromising credibility.
+AI research agents are becoming the workhorse of AI-assisted scientific discovery: an agentic system that has access to data sources, and is able to conduct long-form research to provide the user with a response, grounded in exhaustive and comprehensive research, without compromising credibility.
 
-In this blog I want to dissect how I've developed AI research assistants in the past through step-wise improvements, guided by evaluation metrics and clear targets. I'll take an example system, a Materials AI Research Agent, to illustrate my methodology. The system will access a structured DB with +100k materials and surface diverse material solutions to the user's query, without hallucinations. 
+In this blog, I want to dissect how I've developed AI research assistants in the past through step-wise improvements, guided by evaluation metrics and clear targets. I'll take an example system, a Materials AI Research Agent, to illustrate my methodology. The system will access a structured DB with 100k+ materials and surface diverse material solutions to the user's query, without hallucinations. 
 
 I'll use Google's Agent Development Kit (ADK), as it's a simple-to-understand framework for building agentic systems, with Gemini 3 Flash.
 
-## Establising metrics with clear targets
-The first port-of-call when developing an agentic system is to agree on metrics to track the agent's performance, and perhaps more importantly agreeing on what success looks like. This is something I like to call Metrics Driven Agentic Design.
+## Establishing metrics with clear targets
+The first port-of-call when developing an agentic system is to agree on metrics to track the agent's performance, and perhaps more importantly, agree on what success looks like. This is something I like to call Metrics Driven Agentic Design.
 
-For the example Research Anget, this is what success would look like:
+For the example Research Agent, this is what success would look like:
 1. The agent's responses contain a diverse number of materials and ingredients. Researchers are interested in having a variety of alternatives at hand to contrast solutions against each other, while being able to pick and choose the best for their use-case.
-2. The agent's responses cite a wide variety of sources. Researchers
+2. The agent's responses cite a wide variety of sources.
 3. The agent's responses contain 0 hallucinations. This one needs no justification in a scientific context.
 
-With clear targets in mind, I'll evaluate my designs against a set of 50 evaluation representative materials research tasks, and assess whether my agentic designs meet the established criteria.
+With clear targets in mind, I evaluate my designs against a set of 50 representative materials research tasks, and assess whether these agentic designs meet the established criteria.
 
 ## Single Agent System
 <Image
@@ -27,9 +27,9 @@ With clear targets in mind, I'll evaluate my designs against a set of 50 evaluat
   width={500}
 />
 
-The baseline design I'll start with is a single agent with access to tools for querying a SQL database, ADK let's me define these as an `SQLToolSet`. From recent benchmarks, agents have proven to be extremely good a code generation, so we don't bother with creating vector stores or the like. The `ResearchAgent` is both in charge of querying the database for materials, as well as returning a `Grounded Response` to the user.
+The baseline design I start with is a single agent with access to tools for querying a SQL database. ADK lets me define these as an `SQLToolSet`. From recent benchmarks, agents have proven to be extremely good at code generation, so I don't bother with creating vector stores or the like. The `ResearchAgent` is both in charge of querying the database for materials, as well as returning a `Grounded Response` to the user.
 
-To evaluate the baseline design, I'll measure the average number of unique sources & materials returned per response, as well as whether the responses contain hallucinated citations or not. I do this for different thinking budgets (including dynamic thinking) to see if there is any improvement across the source diversity metrics.
+To evaluate the baseline design, I measure the average number of unique sources & materials returned per response, as well as whether the responses contain hallucinated citations or not. I do this for different thinking budgets (including dynamic thinking) to see if there is any improvement across the source diversity metrics.
 
 <Image
   src="/mas-for-materials-research/s1-single-agent-baseline.svg"
@@ -47,7 +47,7 @@ There are two things to note: (1) the baseline system is below target in source 
   width={500}
 />
 
-The priority for the next system evolution is addressing hallucinations; a research agent must be trustworthy first and foremost. A first, easy win, is to evolve the baseline system's design to return structured outputs that contain the `ResearchFinding` including the materials and their traceable URLs. The structured output can gives the system direct access to source URLs without the need to parse them from the agent's text response.
+The priority for the next system evolution is addressing hallucinations; a research agent must be trustworthy first and foremost. A first, easy win, is to evolve the baseline system's design to return structured outputs that contain the `ResearchFinding`, including the materials and their traceable URLs. The structured output gives the system direct access to source URLs without the need to parse them from the agent's text response.
 
 ```python
 """Data models for agent processing."""
@@ -65,7 +65,7 @@ class ResearchFinding(BaseModel):
     materials: list[Material] = []
 ```
 
-With the structured output, the next evolution of the system is to use ADK's handy `callbacks`. The system will use an `after_agent_callback` that is able to acccess source URLs, flag hallucinated ones, and make a call to a fast LLM to return a response that does not contain any content or materials referencing the hallucinated source; our `redact_hallucinations_callback`.
+With the structured output, the next evolution of the system is to use ADK's handy `callbacks`. The system will use an `after_agent_callback` that is able to access source URLs, flag hallucinated ones, and make a call to a fast LLM to return a response that does not contain any content or materials referencing the hallucinated source: the `redact_hallucinations_callback`.
 
 ```python
 """Single ResearchAgent definition."""
@@ -87,13 +87,13 @@ class ResearchAgent(Agent):
         """
         super().__init__(
             ...
-            output_schema=Finding
+            output_schema=Finding,
             after_agent_callback=redact_hallucinations_callback,
             **kwargs,
         )
 ```
 
-By introducing structured outputs and the `redact_hallucinations_callback` we are able to introduce a near-deterministic check that removes all hallucinations when evaluated against our evaluation set of respresentative research tasks!
+By introducing structured outputs and the `redact_hallucinations_callback`, the system is able to introduce a near-deterministic check that removes all hallucinations when evaluated against the evaluation set of representative research tasks!
  
 <Image
   src="/mas-for-materials-research/s2-callback-hallucination.svg"
@@ -111,25 +111,25 @@ By introducing structured outputs and the `redact_hallucinations_callback` we ar
   height={400}
 />
 
-The second priority is addressing the issue of insufficient sources and materials per response. The system should sourface numerous unique materials coming from varied reputable sources, to support researchers decision making process. 
+The second priority is addressing the issue of insufficient sources and materials per response. The system should surface numerous unique materials coming from varied reputable sources, to support researchers' decision making process. 
 
 There are generally two alternatives to improve the system (apart from shopping for other models):
 1. Prompt engineering: incentivize the agent to spend more time and resources interrogating the DB.
 2. System changes: increase the number of agents conducting the research, therefore performing more depth-first searches across the space defined by the DB.
 
-To avoid the whack-a-mole problem the changes made to the system should be measurable, as well as their outcome on the metric that needs to be improved. With prompt engineering one can't pinpoint for certain which sections in our prompt are driving improvements. On the other hand, system changes that lean on the agentic framework of choice can be easy to pin-point and relate directly to measurable improvements.
+To avoid the whack-a-mole problem, the changes made to the system should be measurable, as well as their outcome on the metric that needs to be improved. With prompt engineering, it's not possible to pinpoint for certain which sections in the prompt are driving improvements. On the other hand, system changes that lean on the agentic framework of choice can be easy to pinpoint and relate directly to measurable improvements.
 
-Specifically, I can use `SequentialAgent` to decouple the research from the synthesis & presentation phase, and I can use `ParallelAgent` to easily increase the number of agents performing the research task. I now have evolved my system into a Multi-Agent System, as defined below.
+Specifically, I can use `SequentialAgent` to decouple the research from the synthesis & presentation phase, and I can use `ParallelAgent` to easily increase the number of agents performing the research task. At this point, the system has evolved into a Multi-Agent System, as defined below.
 
 ```python
-"""Mutli Agent System definition."""
+"""Multi Agent System definition."""
 from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
 from callbacks import redact_hallucinations_callback
 from materiom_ai.domain.agents.models import Finding
 from agents import ResearchAgent
 
 class MultiAgentSystem(SequentialAgent):
-    """MultiAgentSytem definition."""
+    """MultiAgentSystem definition."""
     def __init__(
         self,
         n_agents: int,
@@ -160,7 +160,7 @@ class MultiAgentSystem(SequentialAgent):
         )
 ```
 
-This change now lets me track the direct relationship between my number of agents, and the comprehensiveness of my system's response. With just 3 research agents I am able to surpass my targets.
+This change now makes it possible to track the direct relationship between the number of agents and the comprehensiveness of the system's response. With just 3 research agents, it is possible to surpass the targets.
 
 <Image
   src="/mas-for-materials-research/s3-cohort-vs-single.svg"
@@ -171,13 +171,13 @@ This change now lets me track the direct relationship between my number of agent
 
 
 ## Compromising performance with cost & latency
-Now that the system is able to meet the stated requirements, let's think two basic metrics that will affect the user's experience as well as my ability to host the model sustainably: cost & response latency (i.e. Time to First Token). 
+Now that the system is able to meet the stated requirements, it's time to think about two basic metrics that will affect both the user's experience and the ability to host the model sustainably: cost & response latency (i.e. Time to First Token). 
 
 One can approach this optimization by setting some targets:
-1. **Cost:** if we roll this ouyt to 100 lab users, the cost of this agent should not exceed $500/month; if we assume 100 lab users will use it in average 3 times a week, with 2 interactions every time, we are at ceiling of $0.21 per response.
-2. **Latency:** multi-agent systems have leniency of taking between 30-180s of response time. Given that our system is on the simpler side, this system should return its response in no longer than 60s.
+1. **Cost:** if this is rolled out to 100 lab users, the cost of this agent should not exceed $500/month; if 100 lab users use it on average 3 times a week, with 2 interactions every time, the ceiling is $0.21 per response.
+2. **Latency:** multi-agent systems have leniency of taking between 30-180s of response time. Given that this system is on the simpler side, it should return its response in no longer than 60s.
 
-For simplicity, the two main levers I have to pull from are number of agents, and thinking budget of my agents. We can map the behavior of our system as we increase both of these levers.
+For simplicity, the two main levers to pull are number of agents, and the thinking budget of each agent. It is possible to map the behavior of the system as both of these levers are increased.
 
 <Image
   src="/mas-for-materials-research/s4-tradeoffs.svg"
@@ -186,10 +186,10 @@ For simplicity, the two main levers I have to pull from are number of agents, an
   height={552}
 />
 
-This type of metrics-driven view lets me easily spot the trade-offs: 3 agents provide let me stay within target both in cost & latency, but also in performance. When we lock in 3 agents and dial up the thinking budget, I notice that while it doesn't affect system performance, it does affect cost & latency.
+This type of metrics-driven view makes it easy to spot the trade-offs: 3 agents let the system stay within target both in cost & latency, but also in performance. When 3 agents are locked in and the thinking budget is dialed up, it becomes clear that while it doesn't affect system performance, it does affect cost & latency.
 
-This analysis lets me lock in the following system design, validated against my evaluation dataset: a multi-agent system using 3 research agents and 1 synthesis agent, with 0 thinking budget, is able to return a comprehensive, trustworthy research response to my users, while doing so in less than 60s for relatively affordable price.
+This analysis makes it possible to lock in the following system design, validated against the evaluation dataset: a multi-agent system using 3 research agents and 1 synthesis agent, with 0 thinking budget, is able to return a comprehensive, trustworthy research response to users, while doing so in less than 60s for a relatively affordable price.
 
 ## Conclusion
 
-In this entry I went through a demonstration of how Metrics Driven Agentic Design can be a very powerful tool for evolving a baseline agent design through prinpled, evaluation-driven improvements, resulting in a performant agentic system that is ready for inital deployment.
+Metrics Driven Agentic Design can be a very powerful tool for evolving a baseline agent design through principled, evaluation-driven improvements, resulting in a performant agentic system that is ready for initial deployment.
