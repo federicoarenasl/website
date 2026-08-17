@@ -69,7 +69,7 @@ html {
 }
 
 .prose pre {
-  @apply bg-neutral-50 rounded-lg overflow-x-auto border border-neutral-200 py-2 px-3 text-sm;
+  @apply bg-neutral-50 rounded-lg overflow-x-auto border border-neutral-200 py-2 px-3 text-[0.8125rem];
 }
 
 .prose code {
@@ -131,6 +131,13 @@ html {
 
 .prose p {
   @apply my-4 text-neutral-800;
+}
+
+/* Image captions. Two classes so this outranks `.prose p` above, which would otherwise
+   win on specificity over any utility class set on the element and force the caption
+   back to body colour and body margins. */
+.prose .image-caption {
+  @apply mt-2 mb-0 text-[0.8125rem] text-neutral-500 text-left;
 }
 
 .prose h1 {
@@ -240,7 +247,7 @@ input[type='email'] {
 
 /* Shiki code block styles */
 .shiki-wrapper pre {
-  @apply p-4 m-0 text-sm font-mono leading-relaxed;
+  @apply p-4 m-0 text-[0.8125rem] font-mono leading-relaxed;
   overflow-x: auto;
 }
 
