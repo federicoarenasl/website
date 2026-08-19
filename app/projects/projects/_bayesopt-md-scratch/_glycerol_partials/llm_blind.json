@@ -1,0 +1,18 @@
+{
+  "arm": "LLM only, targets withheld",
+  "median_best_loss": 0.3352,
+  "p_seeds_reach_threshold": 0.0,
+  "p_unstable": 0.0,
+  "median_cost_to_loss_threshold": NaN,
+  "median_steps_to_loss_threshold": NaN,
+  "p_blowup_violations": 0.0,
+  "p_thermostat_violations": 0.0,
+  "p_min_image_violations": 0.0,
+  "epsilon_error_pct": 9.58,
+  "sigma_error_pct": 6.81,
+  "bond_length_nm_error_pct": 8.83,
+  "bond_k_error_pct": 16.82,
+  "angle_deg_error_pct": 3.77,
+  "angle_k_error_pct": 9.33,
+  "mean_param_error_pct": 13.56
+}

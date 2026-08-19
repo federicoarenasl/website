@@ -295,6 +295,59 @@ input[type='email'] {
   @apply text-green-900;
 }
 
+/* Display maths ($$...$$) gets the same container as a default blockquote, so a
+   formula reads as a set-apart block rather than floating in the text flow.
+   Colour is deliberately left to inherit: the blockquote's neutral-700 would
+   wash out the symbols, and a formula needs full contrast.
+   overflow-x-auto matters here — a formula too wide for the reading column
+   scrolls inside its own box instead of widening the page. */
+.prose .katex-display {
+  @apply my-6 px-6 py-5 rounded-lg border-l-4;
+  @apply bg-neutral-50 border-neutral-400;
+  @apply overflow-x-auto overflow-y-hidden;
+  /* Formulas with limits under an operator (\min_{...}, \sum_{k}) or stacked
+     fractions are taller than a line of prose, and blockquote padding tuned for
+     text leaves them looking wedged into the box. */
+  line-height: 1.5;
+}
+
+/* KaTeX sets its own margins on the display wrapper; the container above owns
+   spacing now, so the inner element must not add to it.
+   font-size overrides KaTeX's default 1.21em: at that size a display formula
+   outweighs the prose around it, and the longer ones overflow the reading
+   column on a laptop. 1em sets a formula at body size. */
+.prose .katex-display > .katex {
+  @apply my-0;
+  font-size: 1em;
+}
+
+/* Inline maths sits inside a sentence, so it should track the surrounding text
+   rather than standing away from it. */
+.prose p .katex,
+.prose li .katex,
+.prose td .katex,
+.prose th .katex {
+  font-size: 1em;
+}
+
+/* Prose annotations inside a formula — \text{minimum image:}, \text{reject},
+   \text{lower confidence bound} — are page language, not notation, so they take
+   the site's sans.
+   Scoped to text mode (.mord.text) on purpose. \mathrm{...} must NOT be
+   included: it marks upright *notation* — subscript labels like the drift in
+   w_drift, and units like kJ mol^-1 — which belongs to the formula and should
+   stay in the formula's own family. Setting both put two typefaces inside one
+   expression, which reads as a rendering fault rather than a choice.
+   Italic variables always stay in KaTeX's font: its glyph positioning
+   (radicals, stretchy delimiters, script placement) is computed from those
+   metrics, and swapping the family misaligns them. */
+.prose .katex .mord.text {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.94em;
+  letter-spacing: -0.01em;
+}
+
+
 /* Print styles for CV page */
 @media print {
   @page {

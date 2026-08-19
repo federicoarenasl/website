@@ -1,0 +1,6 @@
+arm,median_best_loss,p_seeds_reach_threshold,p_unstable,median_cost_to_loss_threshold,median_steps_to_loss_threshold,p_blowup_violations,p_thermostat_violations,p_min_image_violations,epsilon_error_pct,sigma_error_pct
+Random search,0.4032,0.1,0.176,0.28,10.0,0.176,0.0,0.0,10.84,1.91
+GP (untuned),0.1335,0.2,0.124,0.58,24.0,0.124,0.0,0.0,7.28,0.9
+"GP (tuned), random warm-up",0.174,0.1,0.292,0.4,17.0,0.292,0.0,0.0,8.06,0.98
+"GP (tuned), LLM warm-up",0.086,0.8,0.252,0.03,1.0,0.252,0.0,0.0,1.7,0.15
+LLM only (no surrogate),0.0146,1.0,0.0,0.03,1.0,0.0,0.0,0.0,0.19,0.03

@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import React from 'react'
 import { CodeBlock, InlineCode } from '../ui/code-block'
 import { ImageLightbox } from '../ui/image-lightbox'
@@ -300,7 +302,20 @@ function createHeading(level) {
  */
 const serializeOptions = {
   blockJS: false,
-  mdxOptions: { remarkPlugins: [remarkGfm] },
+  // remarkMath parses $inline$ and $$block$$; rehypeKatex renders them to HTML
+  // at build time, so no client-side maths runtime ships. KaTeX's stylesheet is
+  // imported once in app/layout.tsx — without it the markup renders unstyled.
+  // remarkMath parses $inline$ and $$block$$; rehypeKatex renders them to HTML
+  // at build time, so no client-side maths runtime ships. KaTeX's stylesheet is
+  // imported once in app/layout.tsx — without it the markup renders unstyled,
+  // with the hidden MathML fallback showing as a duplicate.
+  //
+  // Deliberately KaTeX's default HTML output rather than MathML: MathML would
+  // allow a different maths font, but its rendering was judged worse here.
+  mdxOptions: {
+    remarkPlugins: [remarkGfm, remarkMath],
+    rehypePlugins: [rehypeKatex],
+  },
 }
 
 /**

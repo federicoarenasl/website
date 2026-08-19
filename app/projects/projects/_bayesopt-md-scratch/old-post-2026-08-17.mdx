@@ -1,0 +1,137 @@
+---
+title: 'Comparing Bayesian Optimisation with LLMs for parameterising CG-MD biomolecules'
+publishedAt: '2026-08-17'
+summary: 'Coarse-grained force fields need parameters, and fitting them is slow expert work. I built a benchmark where the answer is known and ran Bayesian optimisation against an LLM. The LLM won, and not for the reason I expected.'
+---
+
+Coarse-grained molecular dynamics is how you simulate a biopolymer film rather than a
+handful of molecules. You trade atoms for beads, buy three orders of magnitude in system
+size and simulated time, and pay for it with a parameterisation problem: every new
+molecule needs numbers that nobody has fitted yet. For the bio-based materials space —
+glycerol, alginate, chitosan, the plasticisers and biopolymers that actually go into
+films — that fitting is slow, manual, expert work, and it is the bottleneck.
+
+Each candidate parameter set costs a simulation to evaluate, so this is a
+sample-efficiency problem, which is the natural home of Bayesian optimisation. The
+question I wanted to answer is whether a frontier LLM, with no surrogate model at all,
+is competitive with that.
+
+## The result
+
+Each candidate parameter set costs a simulation to evaluate, so this is a
+sample-efficiency problem, which is the natural home of Bayesian optimisation. The
+question I wanted to answer is whether a frontier LLM, with no surrogate model at all,
+is competitive with that.
+
+
+<Image
+  src="/bayesopt-for-md-simulators/glycerol-improvements.gif"
+  alt="Three panels showing the loss landscape over equilibrium geometry, stiffness, and non-bonded parameters, with each method's improving moves traced over them, and a shared convergence plot below."
+  width={672}
+/>
+
+The panels show the six parameters being recovered, grouped by what they do, over the
+real loss landscape — every background point is an actual simulation. Only *improving*
+moves are connected: joining every proposal draws the exploration, which is mostly
+noise. The star is the answer.
+
+## The result
+
+| method | best loss | crash rate | mean parameter error |
+|---|---|---|---|
+| Random search | 0.9264 | 63% | 43.8% |
+| Bayesian optimisation | 0.5613 | 39% | 47.2% |
+| **LLM** | **0.1247** | **0%** | **7.24%** |
+
+The LLM is **4.5× better on loss and 6.5× better on parameter recovery**, and it is the
+only method that crosses "good enough" — it does so at simulation nine and stays there.
+
+<Image
+  src="/bayesopt-for-md-simulators/glycerol-arms.gif"
+  alt="The candidate molecule each method proposes, redrawn at every simulation, with the hidden reference molecule ghosted behind it, over a shared convergence plot."
+  width={672}
+/>
+
+Here the same run is drawn as the molecule itself, since four of the nine parameters
+*are* its geometry. Bead separation is the bond length, the opening angle is the angle,
+bead radius is σ, and the translucent halos are the thermal spread implied by the force
+constants through equipartition. The grey ghost is the answer.
+
+## Why it wins, and it is not what I assumed
+
+My first assumption was that the LLM was simply a better optimiser. The data says
+something narrower and more interesting.
+
+**It never crashes the simulator.** Zero failures in 90 simulations, against 39% for
+Bayesian optimisation and 63% for random search. Stability constraints in molecular
+dynamics are analytic — the timestep limit follows from the bond vibration period, the
+cutoff limit from the box geometry — and the LLM simply knows them. A Gaussian Process
+has to discover that boundary by crashing into it, and each crash buys nothing. In a
+space where half the volume returns no number, knowing where not to look is worth more
+than modelling where to go.
+
+That capability is robust. It replicated on a completely different system (argon, whose
+stability boundary is governed by unrelated physics), and it survives when the targets
+are withheld entirely.
+
+**The surrogate has nothing to learn from at this budget.** I checked whether the GPs
+were predicting anything at all, by fitting each observable on pooled data and scoring on
+held-out points:
+
+| observable | R² at 20 training points | at 100 |
+|---|---|---|
+| potential energy | 0.60 | 0.71 |
+| mean bond | 0.62 | 0.84 |
+| bond spread | 0.41 | 0.77 |
+| mean angle | 0.31 | 0.79 |
+| angle spread | **−0.26** | 0.37 |
+| pressure | **0.04** | 0.16 |
+| diffusion | **−0.11** | 0.13 |
+
+Twenty points is what the surrogate has after warm-up. At that size three of the seven
+models are worse than predicting a constant. There is nothing to improve architecturally
+when there is not enough data to fit anything — which is why every BO variant I tried,
+tuned or untuned, single- or multi-output, landed in the same place.
+
+So the honest claim is not "LLMs beat Bayesian optimisation". It is that **below roughly
+fifty simulations in nine dimensions, a surrogate has nothing to work with, and priors
+are the only information available.** The same table predicts BO should become
+competitive somewhere around 60–100 simulations. That prediction is untested.
+
+## What the LLM gets wrong
+
+It reads observables too literally. The measured mean bond length is 0.2996 nm, and the
+model proposed **exactly 0.2996** as the equilibrium bond length in two of three runs.
+The true value is 0.3126 — a bond in a dense liquid sits about 4% below its equilibrium
+length, because neighbouring molecules compress it. Equating the ensemble average with
+the parameter is a rookie error, and no amount of further optimisation corrected it.
+
+Withholding the numeric targets confirms this is copying rather than inference: the
+values scatter to 0.2850, 0.2900 and 0.2600, and the loss degrades from 0.1247 to 0.3352
+— though the crash rate stays at exactly zero. Roughly half the accuracy advantage was
+privileged data. The feasibility advantage was not.
+
+The standard fix in coarse-grained parameterisation is to fit bonded parameters to full
+*distributions* from an atomistic reference rather than to their means, which
+structurally cannot make this mistake. This result is an argument for doing that.
+
+## What this does and does not show
+
+It shows the optimiser, not the physics. Tuning a model to reproduce itself says nothing
+about whether a three-bead Lennard-Jones glycerol is a good glycerol — it is not, since
+without partial charges it has no hydrogen bonding and its cohesive energy comes out
+around half the experimental value.
+
+The scope is narrow and worth stating plainly: **one molecule, one budget, one model,
+one mapping.** The LLM arm ran three seeds against ten for the others, so its margin is
+a strong signal rather than a settled number. And the setting — nine parameters fitted
+simultaneously against one composite objective — is close to the worst case for Bayesian
+optimisation. Real workflows stage the problem, fitting bonded parameters against cheap
+atomistic distributions with hundreds of evaluations, then non-bonded parameters against
+expensive thermodynamics with far fewer. In that first regime, a surrogate should win.
+
+Which suggests where each method belongs. Cheap objective, many evaluations affordable:
+use the surrogate. Expensive objective, few evaluations affordable: use the priors. For
+a Martini-style framework that maps onto something concrete — the model selects bead
+types from chemistry, and Bayesian optimisation fits the bonded parameters against
+atomistic reference data.

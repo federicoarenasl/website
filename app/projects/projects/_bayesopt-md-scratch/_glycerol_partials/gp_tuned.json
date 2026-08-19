@@ -1,0 +1,18 @@
+{
+  "arm": "GP (tuned), random warm-up",
+  "median_best_loss": 0.8275,
+  "p_seeds_reach_threshold": 0.0,
+  "p_unstable": 0.7533,
+  "median_cost_to_loss_threshold": NaN,
+  "median_steps_to_loss_threshold": NaN,
+  "p_blowup_violations": 0.56,
+  "p_thermostat_violations": 0.0,
+  "p_min_image_violations": 0.1933,
+  "epsilon_error_pct": 32.81,
+  "sigma_error_pct": 9.27,
+  "bond_length_nm_error_pct": 17.79,
+  "bond_k_error_pct": 49.61,
+  "angle_deg_error_pct": 7.82,
+  "angle_k_error_pct": 100.93,
+  "mean_param_error_pct": 45.42
+}

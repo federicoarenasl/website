@@ -1,0 +1,202 @@
+{
+  "n_steps": 150,
+  "llm_ref": 0.1246862992372618,
+  "arms": {
+    "BO, multi-output + constraints": {
+      "n_seeds": 12,
+      "final_median_loss": 0.301,
+      "ci95": [
+        0.1754,
+        0.3424
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "0/12",
+      "median_param_error_pct": 30.37,
+      "param_error_by_budget": {
+        "10": 56.5,
+        "20": 49.06,
+        "30": 55.71,
+        "50": 43.77,
+        "75": 38.43,
+        "100": 30.54,
+        "125": 30.98,
+        "150": 30.37
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.3778,
+        "31-60": 0.2806,
+        "61-100": 0.275,
+        "101-150": 0.265
+      }
+    },
+    "BO in LLM-elicited bounds": {
+      "n_seeds": 12,
+      "final_median_loss": 0.2144,
+      "ci95": [
+        0.1472,
+        0.3108
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "1/12",
+      "median_param_error_pct": 29.52,
+      "param_error_by_budget": {
+        "10": 22.0,
+        "20": 22.84,
+        "30": 25.38,
+        "50": 30.57,
+        "75": 31.04,
+        "100": 28.89,
+        "125": 23.01,
+        "150": 29.52
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.25,
+        "31-60": 0.3528,
+        "61-100": 0.3833,
+        "101-150": 0.4833
+      }
+    },
+    "BO in LLM-elicited bounds, hard penalty": {
+      "n_seeds": 8,
+      "final_median_loss": 0.3247,
+      "ci95": [
+        0.2425,
+        0.3839
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "0/8",
+      "median_param_error_pct": 29.78,
+      "param_error_by_budget": {
+        "10": 22.84,
+        "20": 21.09,
+        "30": 22.35,
+        "50": 25.75,
+        "75": 28.42,
+        "100": 28.42,
+        "125": 29.78,
+        "150": 29.78
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.1375,
+        "31-60": 0.05,
+        "61-100": 0.0563,
+        "101-150": 0.0441
+      }
+    },
+    "GP (untuned)": {
+      "n_seeds": 12,
+      "final_median_loss": 0.3033,
+      "ci95": [
+        0.2488,
+        0.4536
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "0/12",
+      "median_param_error_pct": 36.97,
+      "param_error_by_budget": {
+        "10": 42.43,
+        "20": 32.48,
+        "30": 37.37,
+        "50": 37.55,
+        "75": 39.51,
+        "100": 39.39,
+        "125": 40.76,
+        "150": 36.97
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.3306,
+        "31-60": 0.1167,
+        "61-100": 0.0917,
+        "101-150": 0.0467
+      }
+    },
+    "GP (tuned), LLM warm-up": {
+      "n_seeds": 10,
+      "final_median_loss": 0.1827,
+      "ci95": [
+        0.1523,
+        0.2524
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "0/10",
+      "median_param_error_pct": 10.15,
+      "param_error_by_budget": {
+        "10": 9.2,
+        "20": 9.98,
+        "30": 9.98,
+        "50": 9.98,
+        "75": 10.25,
+        "100": 10.25,
+        "125": 10.25,
+        "150": 10.15
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.4467,
+        "31-60": 0.6767,
+        "61-100": 0.78,
+        "101-150": 0.792
+      }
+    },
+    "GP (tuned), random warm-up": {
+      "n_seeds": 12,
+      "final_median_loss": 0.7061,
+      "ci95": [
+        0.5155,
+        0.8488
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "0/12",
+      "median_param_error_pct": 35.31,
+      "param_error_by_budget": {
+        "10": 42.43,
+        "20": 34.57,
+        "30": 36.63,
+        "50": 36.55,
+        "75": 36.63,
+        "100": 36.63,
+        "125": 33.55,
+        "150": 35.31
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.7361,
+        "31-60": 0.7833,
+        "61-100": 0.8187,
+        "101-150": 0.8433
+      }
+    },
+    "Random search": {
+      "n_seeds": 4,
+      "final_median_loss": 0.5078,
+      "ci95": [
+        0.4114,
+        0.6074
+      ],
+      "crossover_vs_llm": null,
+      "crossover_vs_threshold": null,
+      "seeds_ever_reaching_llm": "0/4",
+      "median_param_error_pct": 49.25,
+      "param_error_by_budget": {
+        "10": 41.5,
+        "20": 37.18,
+        "30": 50.64,
+        "50": 54.89,
+        "75": 54.89,
+        "100": 49.25,
+        "125": 49.25,
+        "150": 49.25
+      },
+      "crash_rate_by_phase": {
+        "1-30": 0.6333,
+        "31-60": 0.5667,
+        "61-100": 0.6138,
+        "101-150": 0.6667
+      }
+    }
+  }
+}
