@@ -176,7 +176,8 @@ def _draw_landscape(ax):
     return filled, levels, [crash_mesh, hatch, filled, cliff]
 
 
-def _write_animation(anim, out, webp_quality=80):
+def _write_animation(anim, out, webp_quality=80, transparent=False,
+                     facecolor=SURFACE):
     """Render frames, then re-save with per-frame durations.
 
     Pillow infers the container from the extension, so `.webp` yields an
@@ -185,12 +186,24 @@ def _write_animation(anim, out, webp_quality=80):
     either way because Pillow drops repeated identical frames, so the end pause
     has to be a per-frame duration rather than duplicated frames.
     """
+    # transparent=True keeps the page background showing through. Only worth it
+    # for .webp: GIF carries a single fully-transparent palette index, so every
+    # antialiased edge -- all the text, every sphere rim -- has to snap to either
+    # opaque or invisible, and fringes badly.
+    # facecolor="none" rather than transparent=True: the latter also clears every
+    # *axes* patch, which erases deliberate backgrounds -- the pale ground marking
+    # the infeasible region, for one -- and makes "crashed" look identical to
+    # "off the edge of the data".
+    save_kwargs = ({"facecolor": "none"} if transparent
+                   else {"facecolor": facecolor})
     anim.save(out, writer=PillowWriter(fps=1000 / FRAME_MS), dpi=DPI,
-              savefig_kwargs={"facecolor": SURFACE})
+              savefig_kwargs=save_kwargs)
     plt.close("all")
 
     src = Image.open(out)
     seq = [f.copy() for f in ImageSequence.Iterator(src)]
+    if transparent:
+        seq = [f.convert("RGBA") for f in seq]
     durations = [FRAME_MS] * len(seq)
     durations[-1] = FINAL_HOLD_MS
     common = dict(save_all=True, append_images=seq[1:], duration=durations, loop=0)
