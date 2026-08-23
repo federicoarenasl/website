@@ -165,7 +165,7 @@ Finally, simulating the fitted system over 0, 30, and 60 picoseconds shows a dis
 
 <Image
   src="/bayesopt-for-md-simulators/glycerol-real-slab3d.webp"
-  alt="A 0.50 nm slice through each of the four fitted liquids at 0, 30 and 60 picoseconds, beads drawn at true sigma/2. The solid outline is the box that arm reached; the dashed floor is the footprint the experimental density implies."
+  alt="A 0.50 nm slice through each of the four fitted liquids at 0, 30 and 60 picoseconds. This animation shows the behavior of the parameterized molecules when interacting with each other."
   width={672}
 />
 
@@ -197,6 +197,6 @@ Finally, as I've noted along this write-up, two things need to be swapped out in
 [^2]: Bastos et al., *J. Chem. Thermodyn.* 20 (1988); 91.7 ± 0.9 kJ/mol by direct vaporisation calorimetry.
 [^3]: Verevkin et al., *Fluid Phase Equilib.* 397 (2015); 90.5 ± 0.3 kJ/mol from evaluated vapour pressures.
 [^4]: Frozen geometry parameters: bond length 0.3126 nm; angle 124.7°; force constants 2140 kJ/mol/nm² (bond), 38.6 kJ/mol (angle); timestep 20 fs; thermostat coupling 1.0 ps.
-[^5]: Artificial Analysis leaderboards, 23 August 2026. Claude Opus 5 leads the composite Intelligence Index at 63 in its max-effort configuration; the high-effort configuration used here scores 61, fourth. On Humanity's Last Exam Opus 5 sits second at 54.9%, behind Claude Fable 5 at 55.5%; on GPQA Diamond it is outside the top three, led by Grok 4.6 at 94.9%.
+[^5]: Artificial Analysis leaderboards, 23 August 2026. Claude Opus 5 leads the composite Intelligence Index at 63 in its max-effort configuration. On Humanity's Last Exam Opus 5 sits second at 54.9%, behind Claude Fable 5 at 55.5%.
 [^6]: Twelve seeds (0–11) per agent. Bayesian optimisation, the feasibility model and the LLM warm-start each ran 40 simulations per seed; the LLM ran 20.
-[^7]: Estimated from viscosity, not measured: 0.934 Pa·s at 298.15 K (Segur and Oberstar, *Ind. Eng. Chem.* 43 (1951) 2117–2120) gives D ≈ 9 × 10⁻¹³ m² s⁻¹ by Stokes–Einstein at a 0.25 nm radius, or ~0.02 nm in 60 ps; the fitted champions sit at 0.9–2.3 × 10⁻¹⁰ m² s⁻¹. Direct measurements of bulk glycerol self-diffusion by PFG-NMR are reported in D'Agostino, Mitchell, Gladden and Mantle, *J. Phys. Chem. C* 116 (2012) 8975–8982, and its temperature dependence in Tomlinson, *Mol. Phys.* 25 (1973) 735–738.
+[^7]: Estimated from viscosity: 0.934 Pa·s at 298.15 K (Segur and Oberstar, *Ind. Eng. Chem.* 43 (1951) 2117–2120) gives D ≈ 9 × 10⁻¹³ m² s⁻¹ by Stokes–Einstein at a 0.25 nm radius, or ~0.02 nm in 60 ps; the fitted champions sit at 0.9–2.3 × 10⁻¹⁰ m² s⁻¹. Direct measurements of bulk glycerol self-diffusion by PFG-NMR are reported in D'Agostino, Mitchell, Gladden and Mantle, *J. Phys. Chem. C* 116 (2012) 8975–8982, and its temperature dependence in Tomlinson, *Mol. Phys.* 25 (1973) 735–738.
