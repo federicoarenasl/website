@@ -38,8 +38,8 @@ sys.path.insert(0, str(SCRATCH))
 WHITE = "#ffffff"   # matches the page, so the figure shows no panel edge
 
 from make_animation import (  # noqa: E402
-    BASE, CRITICAL, INK, INK_MUTED, INK_SECONDARY, LOSS_CMAP, ORANGE, SURFACE,
-    VIOLET, _write_animation, style_ax,
+    AQUA, BASE, BLUE, CRITICAL, INK, INK_MUTED, INK_SECONDARY, LOSS_CMAP,
+    ORANGE, SURFACE, VIOLET, _write_animation, style_ax,
 )
 
 LANDSCAPE = SCRATCH / "real_landscape.csv"
@@ -51,10 +51,18 @@ CUTOFF = 1.1159
 # minimum re-measures to once best-of-N optimism is removed, so anything below it
 # is a luckier trajectory rather than a better force field.
 NOISE_FLOOR = 0.0248
-# One representative seed. With twelve LLM seeds against twelve BO seeds, this is
-# the pair whose combined log-deviation from each arm's own median is smallest:
-# LLM 0.0104 against its median 0.0093, BO 0.0451 against its 0.0732.
-SEEDS = [4]
+# Four arms on one seed. Seed 7 is the balanced pick: measured by combined
+# log-deviation from each arm's own median it is the seed where all four behave
+# most typically at once (BO 0.0638 vs median 0.0732, LLM 0.0218 vs 0.0093,
+# feasibility 0.0326 vs 0.0403, warm-start 0.0566 vs 0.0420). Seed 8 scores
+# marginally better only because BO does unusually badly there.
+SEED = 7
+ARM_SPECS = [
+    ("Bayesian optimisation", "glycerol_real", VIOLET),
+    ("BO + feasibility model", "glycerol_real_gpfeas", AQUA),
+    ("BO + LLM warm-start", "glycerol_real_llmwarm", BLUE),
+    ("LLM", "glycerol_real_llm", ORANGE),
+]
 
 
 def load_field():
@@ -84,33 +92,19 @@ def load_run(run_dir, seed):
 
 def main():
     eps, sig, grid = load_field()
-    # Prefer whichever BO directory has the longer trajectory: a re-run in
-    # progress would otherwise be picked over a completed one and silently
-    # truncate the comparison to however far it had got.
-    candidates = [RUNS / "glycerol_real", RUNS / "glycerol_real_v1"]
-    bo_dir = max(candidates, key=lambda d: len(load_run(d, SEEDS[0])))
-    panels = []          # (row, column, label, trajectory, colour)
-    for row, seed in enumerate(SEEDS):
-        panels.append((row, 0, f"Bayesian optimisation · seed {seed}",
-                       load_run(bo_dir, seed), VIOLET))
-        panels.append((row, 1, f"LLM · seed {seed}",
-                       load_run(RUNS / "glycerol_real_llm", seed), ORANGE))
-    panels = [p for p in panels if p[3]]
-    n_frames = max(len(p[3]) for p in panels)
+    panels = [(name, load_run(RUNS / d, SEED), colour)
+              for name, d, colour in ARM_SPECS]
+    panels = [p for p in panels if p[1]]
+    n_frames = max(len(t) for _n, t, _c in panels)
 
-    # Sized for a 672px reading column on a phone: a smaller canvas at the same
-    # dpi makes every label larger relative to the figure, which is the only
-    # thing that matters for legibility once it is scaled to fit.
-    # Stacked, not side by side. Two columns on a phone give each panel about a
-    # third of the screen, which no amount of type scaling rescues; one column
-    # doubles the linear size of everything for the price of height, and height
-    # is free when the reader scrolls.
-    n_panels = len(panels)
-    fig = plt.figure(figsize=(7.6, 6.2), facecolor=WHITE)
-    gs = fig.add_gridspec(2, n_panels, height_ratios=[3.4, 1.9],
-                          hspace=0.46, wspace=0.22)
-    field_axes = [fig.add_subplot(gs[0, i]) for i in range(n_panels)]
-    conv = fig.add_subplot(gs[1, :])
+    ncol = 2
+    nrow = (len(panels) + ncol - 1) // ncol
+    fig = plt.figure(figsize=(6.6, 2.9 * nrow + 2.2), facecolor=WHITE)
+    gs = fig.add_gridspec(nrow + 1, ncol, height_ratios=[3.0] * nrow + [2.0],
+                          hspace=0.34, wspace=0.16)
+    field_axes = [fig.add_subplot(gs[i // ncol, i % ncol])
+                  for i in range(len(panels))]
+    conv = fig.add_subplot(gs[nrow, :])
     conv.set_facecolor(WHITE)
 
     finite = grid[np.isfinite(grid)]
@@ -119,7 +113,7 @@ def main():
     crashed_cells = ~np.isfinite(grid)
     kmin = np.unravel_index(np.nanargmin(grid), grid.shape)
 
-    for ax, (_r, _c, name, _t, colour) in zip(field_axes, panels):
+    for i, (ax, (name, _t, colour)) in enumerate(zip(field_axes, panels)):
         ax.set_facecolor("#f0efe9")
         ax.contourf(eps, sig, grid, levels=levels, cmap=LOSS_CMAP, extend="max")
         ax.plot(ei[crashed_cells], si[crashed_cells], "x", color=INK_MUTED,
@@ -127,21 +121,22 @@ def main():
         ax.plot([eps[kmin[1]]], [sig[kmin[0]]], marker="*", ms=14,
                 color=CRITICAL, markeredgecolor="white", markeredgewidth=0.7,
                 zorder=8)
-        ax.set_title(name, fontsize=14, color=colour, loc="left", pad=8)
-        ax.set_xlabel(r"$\epsilon$ (kJ mol$^{-1}$)", fontsize=12,
-                      color=INK_SECONDARY)
-        ax.tick_params(labelsize=11)
+        ax.set_title(name, fontsize=12, color=colour, loc="left", pad=4)
+        if i // ncol == nrow - 1:
+            ax.set_xlabel(r"$\epsilon$ (kJ mol$^{-1}$)", fontsize=11,
+                          color=INK_SECONDARY)
+        if i % ncol == 0:
+            ax.set_ylabel(r"$\sigma$ (nm)", fontsize=11, color=INK_SECONDARY)
+        ax.tick_params(labelsize=9.5)
         style_ax(ax)
-    field_axes[0].set_ylabel(r"$\sigma$ (nm)", fontsize=12, color=INK_SECONDARY)
 
     conv.set_xlim(1, n_frames)
     conv.set_yscale("log")
-    conv.set_xlabel("simulations spent", fontsize=12, color=INK_SECONDARY)
-    conv.set_ylabel("best loss", fontsize=12, color=INK_SECONDARY)
-    conv.tick_params(labelsize=11)
+    conv.set_xlabel("simulations spent", fontsize=11, color=INK_SECONDARY)
+    conv.set_ylabel("best loss", fontsize=11, color=INK_SECONDARY)
+    conv.tick_params(labelsize=10)
     style_ax(conv, grid_axis="y")
-
-    lows = [min([s["loss"] for s in t if s["loss"]] or [1]) for *_x, t, _c in panels]
+    lows = [min([x["loss"] for x in t if x["loss"]] or [1]) for _n, t, _c in panels]
     conv.set_ylim(min(min(lows), NOISE_FLOOR) * 0.55, 1.2)
     conv.axhline(NOISE_FLOOR, color=INK_MUTED, lw=1.1, ls=(0, (5, 3)), zorder=2)
     conv.text(n_frames * 0.985, NOISE_FLOOR * 1.10,
@@ -149,11 +144,7 @@ def main():
               fontsize=10, color=INK_MUTED)
 
     artists = []
-    for ax, (_r, _c, _n, _t, colour) in zip(field_axes, panels):
-        # Evaluated-but-not-improving proposals sit faint underneath: joining
-        # every proposal draws the exploration, which is mostly noise. The path
-        # connects only the moves that improved on the best so far, which is
-        # the search's actual descent through the field.
+    for ax, (_n, _t, colour) in zip(field_axes, panels):
         pts, = ax.plot([], [], "o", ms=4, color=colour, alpha=0.30, zorder=5)
         off, = ax.plot([], [], "o", ms=4, markerfacecolor="none",
                        markeredgecolor=colour, alpha=0.22, zorder=5)
@@ -163,22 +154,16 @@ def main():
         cur, = ax.plot([], [], "o", ms=11, markerfacecolor="none",
                        markeredgecolor=INK, mew=1.4, zorder=9)
         artists.append((pts, off, bad, path, cur))
-    # Dashed for the second seed, so four traces stay tellable apart by method
-    # (colour) and by seed (dash) rather than needing four colours.
-    lines = [conv.plot([], [], lw=2.0, color=c, label=n,
-                       ls="-" if r == 0 else (0, (5, 2)))[0]
-             for r, _c, n, _t, c in panels]
-    conv.legend(frameon=False, fontsize=11, loc="upper right",
+    lines = [conv.plot([], [], lw=2.0, color=c, label=n)[0] for n, _t, c in panels]
+    conv.legend(frameon=False, fontsize=9, loc="upper right", ncol=2,
                 labelcolor=INK_SECONDARY)
     caption = fig.text(0.5, 0.992, "", fontsize=13, color=INK,
                        ha="center", va="top")
 
     def frame(k):
-        for (_r, _c, name, traj, colour), (pts, off, bad, path, cur), line in zip(
+        for (name, traj, colour), (pts, off, bad, path, cur), line in zip(
                 panels, artists, lines):
             seen = traj[:k + 1]
-            # Split by whether the proposal improved, and by whether its cutoff
-            # puts it on this slice of the field.
             best_so_far, improving = math.inf, []
             for st in seen:
                 if st["loss"] is not None and st["loss"] < best_so_far:
@@ -201,14 +186,14 @@ def main():
             if seen:
                 cur.set_data([seen[-1]["eps"]], [seen[-1]["sig"]])
             best, xs, ys = math.inf, [], []
-            for i, s in enumerate(seen, start=1):
-                if s["loss"] is not None:
-                    best = min(best, s["loss"])
+            for i, st in enumerate(seen, start=1):
+                if st["loss"] is not None:
+                    best = min(best, st["loss"])
                 if math.isfinite(best):
                     xs.append(i)
                     ys.append(best)
             line.set_data(xs, ys)
-        caption.set_text(f"simulation {min(k + 1, n_frames)}")
+        caption.set_text(f"simulation {min(k + 1, n_frames)}   ·   seed {SEED}")
         return []
 
     anim = FuncAnimation(fig, frame, frames=n_frames, blit=False)

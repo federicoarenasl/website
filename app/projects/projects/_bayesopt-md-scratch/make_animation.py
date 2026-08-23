@@ -177,7 +177,7 @@ def _draw_landscape(ax):
 
 
 def _write_animation(anim, out, webp_quality=80, transparent=False,
-                     facecolor=SURFACE):
+                     facecolor=SURFACE, frame_ms=None, hold_ms=None):
     """Render frames, then re-save with per-frame durations.
 
     Pillow infers the container from the extension, so `.webp` yields an
@@ -204,8 +204,11 @@ def _write_animation(anim, out, webp_quality=80, transparent=False,
     seq = [f.copy() for f in ImageSequence.Iterator(src)]
     if transparent:
         seq = [f.convert("RGBA") for f in seq]
-    durations = [FRAME_MS] * len(seq)
-    durations[-1] = FINAL_HOLD_MS
+    # Overridable because a three-state figure wants long, readable holds where
+    # a forty-step run wants a flick-book.
+    per_frame = FRAME_MS if frame_ms is None else frame_ms
+    durations = [per_frame] * len(seq)
+    durations[-1] = FINAL_HOLD_MS if hold_ms is None else hold_ms
     common = dict(save_all=True, append_images=seq[1:], duration=durations, loop=0)
     if out.suffix == ".webp":
         # method=6 is the slowest, smallest setting; quality is the lossy knob.

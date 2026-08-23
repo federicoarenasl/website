@@ -349,6 +349,17 @@ input[type='email'] {
 
 
 /* Print styles for CV page */
+/* Footnote back-references. remark-gfm emits a return-arrow glyph, which the
+   MDX `a` override replaces with the word "back"; a word needs sizing and a
+   little separation from the footnote text, where the glyph did not. */
+.prose .footnote-backref {
+  @apply ml-1.5 text-xs no-underline text-neutral-500;
+}
+
+.prose .footnote-backref:hover {
+  @apply text-neutral-900 underline;
+}
+
 @media print {
   @page {
     size: A4;

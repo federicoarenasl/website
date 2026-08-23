@@ -37,8 +37,8 @@ sys.path.insert(0, str(SCRATCH))
 WHITE = "#ffffff"   # matches the page, so the figure shows no panel edge
 
 from make_animation import (  # noqa: E402
-    BASE, CRITICAL, INK, INK_MUTED, INK_SECONDARY, ORANGE, SURFACE, VIOLET,
-    _write_animation, style_ax,
+    AQUA, BASE, BLUE, CRITICAL, INK, INK_MUTED, INK_SECONDARY, ORANGE, SURFACE,
+    VIOLET, _write_animation, style_ax,
 )
 from make_molecule_3d import (  # noqa: E402
     AZIMUTH, MASK, ROCK_AMPLITUDE, SHADE, _rgba, _rx, _view,
@@ -57,10 +57,15 @@ EPS_RANGE = (3.2, 5.4)
 # Smaller than the synthetic figure's 0.34: there the core carried the geometry,
 # here the shell *is* sigma and should dominate.
 CORE_FRACTION = 0.26
-# One representative seed. With twelve LLM seeds against twelve BO seeds, this is
-# the pair whose combined log-deviation from each arm's own median is smallest:
-# LLM 0.0104 against its median 0.0093, BO 0.0451 against its 0.0732.
-SEEDS = [4]
+# Four arms on one seed. Seed 7 is the balanced pick: by combined log-deviation
+# from each arm's own median it is where all four behave most typically at once.
+SEED = 7
+ARM_SPECS = [
+    ("Bayesian optimisation", "glycerol_real", VIOLET),
+    ("BO + feasibility model", "glycerol_real_gpfeas", AQUA),
+    ("BO + LLM warm-start", "glycerol_real_llmwarm", BLUE),
+    ("LLM", "glycerol_real_llm", ORANGE),
+]
 
 WELL_CMAP = LinearSegmentedColormap.from_list(
     "well", ["#b9c6d6", "#7fa4c6", "#e8a34a", "#e2622a", "#a02c18"])
@@ -99,7 +104,7 @@ def draw_scene(ax, step, k, n_frames):
     ax.clear()
     ax.set_facecolor(WHITE)
     ax.set_xlim(-0.62, 0.62)
-    ax.set_ylim(-0.66, 0.56)
+    ax.set_ylim(-0.58, 0.46)
     ax.set_aspect("equal")
     ax.axis("off")
     if step is None:
@@ -140,10 +145,10 @@ def draw_scene(ax, step, k, n_frames):
 
     label = (f"$\\epsilon$ {step['eps']:.2f}    $\\sigma$ {step['sig']:.3f}    "
              f"cutoff {step['cut']:.3f}")
-    ax.text(0, -0.56, label, ha="center", va="center", fontsize=12,
+    ax.text(0, -0.50, label, ha="center", va="center", fontsize=12,
             color=INK_SECONDARY)
     if step["crashed"]:
-        ax.text(0, 0.48, "crashed", ha="center", va="center", fontsize=11,
+        ax.text(0, 0.40, "crashed", ha="center", va="center", fontsize=11,
                 color=CRITICAL, style="italic")
 
 
@@ -183,73 +188,93 @@ def gauge(ax, step, key, target, lo, hi, label, unit, colour):
                 fontweight="medium")
 
 
+
+def gauge_shared(ax, entries, target, lo, hi, label, unit):
+    """One property, every arm on the same scale.
+
+    entries: list of (name, value_or_None, colour, crashed).
+    """
+    ax.clear()
+    ax.set_facecolor(WHITE)
+    ax.set_xlim(lo, hi)
+    ax.set_ylim(-0.4, len(entries) - 0.4)
+    ax.set_yticks([])
+    ax.tick_params(labelsize=10, colors=INK_MUTED)
+    for sp in ("top", "right", "left"):
+        ax.spines[sp].set_visible(False)
+    ax.spines["bottom"].set_color(BASE)
+    ax.axvline(target, color=CRITICAL, lw=1.8, zorder=3)
+    ax.text(lo, len(entries) - 0.25, label, ha="left", va="bottom",
+            fontsize=11.5, color=INK_SECONDARY)
+    ax.text(hi, len(entries) - 0.25, f"target {target:g} {unit}", ha="right",
+            va="bottom", fontsize=10.5, color=CRITICAL)
+    for i, (_name, value, colour, crashed) in enumerate(entries):
+        y = len(entries) - 1 - i
+        if value is None:
+            ax.text((lo + hi) / 2, y, "crashed" if crashed else "not recorded",
+                    ha="center", va="center", fontsize=9.5, color=INK_MUTED,
+                    style="italic")
+            continue
+        ax.barh([y], [value - lo], left=lo, height=0.5, color=colour,
+                alpha=0.5, zorder=2)
+        ax.plot([value], [y], "o", ms=6, color=colour, markeredgecolor="white",
+                markeredgewidth=0.8, zorder=4)
+        txt = f"{value:.0f}" if abs(value) > 200 else f"{value:.1f}"
+        ax.annotate(txt, (value, y), xytext=(6, 0), textcoords="offset points",
+                    ha="left", va="center", fontsize=10, color=INK)
+
+
 def main():
-    candidates = [RUNS / "glycerol_real", RUNS / "glycerol_real_v1"]
-    bo_dir = max(candidates, key=lambda d: len(load_run(d, SEEDS[0])))
-    panels = []
-    for row, seed in enumerate(SEEDS):
-        panels.append((row, 0, f"Bayesian optimisation · seed {seed}",
-                       load_run(bo_dir, seed), VIOLET))
-        panels.append((row, 1, f"LLM · seed {seed}",
-                       load_run(RUNS / "glycerol_real_llm", seed), ORANGE))
-    panels = [p for p in panels if p[3]]
-    n_frames = max(len(p[3]) for p in panels)
+    panels = [(name, load_run(RUNS / d, SEED), colour)
+              for name, d, colour in ARM_SPECS]
+    panels = [q for q in panels if q[1]]
+    n_frames = max(len(t) for _n, t, _c in panels)
 
-    # Each seed contributes a scene row and a gauge row; the convergence trace
-    # spans the bottom. The gauges are the part that says whether the fit is
-    # good -- the bead only says what was tried.
-    # Stacked, and without the convergence trace: that panel is identical to the
-    # one in the search figure, so it was a third of this figure's height spent
-    # showing the reader something they had just seen. Dropping it lets the beads
-    # grow, which is the only thing this figure can say that the other cannot.
-    # Two columns again, but near-square rather than wide: a single raster cannot
-    # be right at both phone and desktop width, and a squarish figure is the shape
-    # that degrades least in either direction. It is no longer cramped because the
-    # duplicated convergence panel is gone, not because it was stretched.
-    n_panels = len(panels)
-    fig = plt.figure(figsize=(7.6, 6.4), facecolor=WHITE)
-    gs = fig.add_gridspec(2, n_panels, height_ratios=[4.0, 1.9],
-                          hspace=0.42, wspace=0.22)
-    scene_axes = [fig.add_subplot(gs[0, i]) for i in range(n_panels)]
-    gauge_axes = []
-    for i in range(n_panels):
-        sub = gs[1, i].subgridspec(2, 1, hspace=3.2)
-        gauge_axes.append((fig.add_subplot(sub[0]), fig.add_subplot(sub[1])))
-
-    caption = fig.text(0.5, 0.985, "", fontsize=13, color=INK,
+    ncol = 2
+    nrow = (len(panels) + ncol - 1) // ncol
+    fig = plt.figure(figsize=(6.6, 2.7 * nrow + 2.4), facecolor=WHITE)
+    gs = fig.add_gridspec(nrow + 1, ncol, height_ratios=[3.0] * nrow + [2.4],
+                          hspace=0.18, wspace=0.10)
+    scene_axes = [fig.add_subplot(gs[i // ncol, i % ncol])
+                  for i in range(len(panels))]
+    gsub = gs[nrow, :].subgridspec(2, 1, hspace=0.75)
+    g_rho = fig.add_subplot(gsub[0])
+    g_h = fig.add_subplot(gsub[1])
+    caption = fig.text(0.5, 0.99, "", fontsize=13, color=INK,
                        ha="center", va="top")
 
-    def readout(step):
-        """Measured properties against experiment, as one line under the scene."""
-        if step is None:
-            return ""
-        if step["crashed"]:
-            return "crashed"
-        parts = []
-        if step["rho"] is not None:
-            parts.append(f"$\\rho$ {step['rho']:.0f} / {RHO_STAR:.0f}"
-                         f"  ({100 * (step['rho'] - RHO_STAR) / RHO_STAR:+.1f}%)")
-        if step["dhvap"] is not None:
-            parts.append(f"$\\Delta H$ {step['dhvap']:.1f} / {H_STAR:.0f}"
-                         f"  ({100 * (step['dhvap'] - H_STAR) / H_STAR:+.1f}%)")
-        return "     ".join(parts) if parts else "not recorded"
-
     def frame(k):
-        for (_r, _c, name, traj, colour), sax, (g1, g2) in zip(
-                panels, scene_axes, gauge_axes):
+        entries_rho, entries_h = [], []
+        for (name, traj, colour), sax in zip(panels, scene_axes):
             step = traj[k] if k < len(traj) else (traj[-1] if traj else None)
             draw_scene(sax, step, k, n_frames)
-            sax.set_title(name, fontsize=14, color=colour, loc="center", pad=2)
-            gauge(g1, step, "rho", RHO_STAR, 700, 1750, "density",
-                  "kg m$^{-3}$", colour)
-            gauge(g2, step, "dhvap", H_STAR, 20, 150, "$\\Delta H_{vap}$",
-                  "kJ mol$^{-1}$", colour)
-        caption.set_text(f"simulation {min(k + 1, n_frames)}")
+            sax.set_title(name, fontsize=12, color=colour, loc="center", pad=0)
+            crashed = bool(step and step["crashed"])
+            entries_rho.append((name, None if step is None else step["rho"],
+                                colour, crashed))
+            entries_h.append((name, None if step is None else step["dhvap"],
+                              colour, crashed))
+        gauge_shared(g_rho, entries_rho, RHO_STAR, 700, 1750, "density",
+                     "kg m$^{-3}$")
+        gauge_shared(g_h, entries_h, H_STAR, 20, 150, "$\\Delta H_{vap}$",
+                     "kJ mol$^{-1}$")
+        tag = "final" if k >= n_frames - 1 else f"simulation {k + 1}"
+        caption.set_text(f"{tag}   ·   seed {SEED}")
         return []
 
-    anim = FuncAnimation(fig, frame, frames=n_frames, blit=False)
+    # Three states instead of forty: first proposal, halfway, final. The axis
+    # here is the optimiser's step count, not simulation time, so these are
+    # "where the search started, got to, and ended".
+    picks = [0, n_frames // 2, n_frames - 1]
+
+    def three(k):
+        return frame(picks[k])
+
+    three(len(picks) - 1)
+    anim = FuncAnimation(fig, three, frames=len(picks), blit=False)
     OUT.mkdir(parents=True, exist_ok=True)
-    _write_animation(anim, OUT / "glycerol-real-bead-3d.webp", facecolor=WHITE)
+    _write_animation(anim, OUT / "glycerol-real-bead-3d.webp", facecolor=WHITE,
+                     frame_ms=1100, hold_ms=4000)
 
 
 if __name__ == "__main__":

@@ -94,11 +94,28 @@ function Table({ data }) {
  * - Internal links (starting with '/') use Next.js Link component
  * - Hash links (starting with '#') use regular anchor tags
  * - External links open in new tab with security attributes
+ * - Footnote back-references render the word "back" in place of remark-gfm's
+ *   default return-arrow glyph, which reads as an emoji on several platforms
  * @param {Object} props - Link props including href and children
  * @returns {JSX.Element} Appropriate link element based on href type
  */
 function CustomLink(props) {
   let href = props.href
+
+  // Footnote back-reference - remark-gfm supplies the arrow as the link's only
+  // child, so the label is replaced rather than styled
+  if (props['data-footnote-backref'] !== undefined) {
+    // One backref is emitted per citation, so a footnote cited twice renders
+    // "back back". Repeats are the ones whose target carries a suffix
+    // (fnref-1-2, fnref-1-3, ...); only the first is kept.
+    if (/#user-content-fnref-\d+-\d+$/.test(href)) return null
+
+    return (
+      <a {...props} className="footnote-backref">
+        back
+      </a>
+    )
+  }
 
   // Internal links - use Next.js Link for client-side navigation
   if (href.startsWith('/')) {
