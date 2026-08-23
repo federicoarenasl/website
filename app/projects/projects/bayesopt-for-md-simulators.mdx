@@ -1,7 +1,7 @@
 ---
 title: 'Using Agents for Parameterizing Molecular Dynamics Biomolecules'
 publishedAt: '2026-08-17'
-summary: 'From Bayesian Optimization to LLM, exploring the potential of agents for parameterizing molecular dynamics biomolecules.'
+summary: 'From Bayesian Optimization to LLMs, exploring the potential of agents for parameterizing molecular dynamics biomolecules.'
 ---
 
 Coarse-Grained Molecular Dynamics (CG-MD) offers the possibility of modeling complex systems that might otherwise be impossible to simulate via finer-grained methods such as DFT and others. The key issue, however, is that the coarser we get, the more we care about larger, often new molecular structures that have never been parameterized or set up before. We are left to the mercy of tuning things by hand through trial and error. This is less than ideal; it couples CG-MD parameterization to a human expert, which is often (1) hard to reproduce and (2) slow.
@@ -11,7 +11,7 @@ In this post, I want to explore, through a minimal example, the implementation o
 ## Optimization goal
 To keep things computationally feasible, I chose the common biomolecule glycerol and decided to parameterize only the three Lennard-Jones terms — **bead size** (σ, ranging from 0.28 to 0.45 nm), **well depth** (ε, ranging from 1 to 8 kJ/mol), and **interaction cutoff** (ranging from 0.90 to 1.20 nm) — using two experimentally measured properties: the density of anhydrous glycerol at atmospheric pressure and 298.15 K (the temperature at which it was recorded[^1]), and its enthalpy of vaporization [^2] [^3]. All other parameters (bond length, angle, bonded force constants, etc.) were left at their literature or standard values [^4]. 
 
-Since the intention here is to demonstrate parameterization minimally from experimentally validated data points, the optimization problem is fitting my starting molecule to match the experimental density (1258.4 ± 0.86 kg/m³ at 298.15 K) [^1] and enthalpy of vaporization (91 ± 1 kJ/mol) [^2] [^3]. This can be formally expressed by the following loss function:
+Since the intention here is to demonstrate parameterization minimally from experimentally validated data points, the optimization problem is fitting the starting molecule to match the experimental density (1258.4 ± 0.86 kg/m³ at 298.15 K)[^1] and enthalpy of vaporization (91 ± 1 kJ/mol)[^2] [^3]. This can be formally expressed by the following loss function:
 
 $$
 \text{loss} = \frac{1}{2} \left| \frac{\rho - \rho^*}{\rho^*} \right| + \frac{1}{2} \left| \frac{\Delta H_{\mathrm{vap}} - \Delta H_{\mathrm{vap}}^*}{\Delta H_{\mathrm{vap}}^*} \right|
@@ -65,7 +65,7 @@ class BaseAgent:
         self._policy = policy
 
     def run(self) -> RunSummary:
-        """Execute the optimisation loop and return a summary.
+        """Execute the optimization loop and return a summary.
 
         Returns
         -------
@@ -89,7 +89,7 @@ class BaseAgent:
         return summary
 ```
 
-Now, as you can already see, my agentic surface above does not imply LLMs. This is intentional, as I want to make sure my portfolio of agents also contains simpler paradigms such as Bayesian Optimization (BO), and I build in sophistication up to using LLMs, specifically Claude Opus 5, simply because it sat among the frontier reasoning models at the time of these runs [^5].
+Now, as you can already see, the agentic surface above does not imply LLMs. This is intentional, to make sure the portfolio of agents also contains simpler paradigms such as Bayesian Optimization (BO), building in sophistication up to using LLMs, specifically Claude Opus 5.
 
 This is the agentic spectrum I decided to test:
 - **BO**: one Gaussian Process over the scalar loss.
@@ -135,9 +135,9 @@ class LlmAgent(BaseAgent):
 
 ## Optimizing the biomolecule
 
-Running the portfolio of agents over many simulations and many random seeds [^6] gives me the behavior shown below, which shows the representative behavior across the settings. The plot below shows a few things in one animation to understand (1) the optimization landscape across bead size and well-depth, (2) the trajectory taken by each agent, and (3) overall performance of each agent as more simulations are accrued. 
+Running the portfolio of agents over many simulations and many random seeds[^5] gives me the behavior shown below, which shows the representative behavior across the settings. The plot below shows a few things in one animation to understand (1) the optimization landscape across bead size and well-depth, (2) the trajectory taken by each agent, and (3) overall performance of each agent as more simulations are accrued. 
 
-> Notice that the simulation can blow up, meaning that the parameterization becomes unstable; this feasibility region is denoted by a grey background with a grid of "x" markers.
+> Notice that the simulation can blow up, meaning that the parameterization becomes unstable; this feasibility region is denoted by a gray background with a grid of "x" markers.
 
 <Image
   src="/bayesopt-for-md-simulators/glycerol-real-search.webp"
@@ -151,7 +151,7 @@ This is not to say that BO methods don't earn their keep! BO in tandem with the 
 
 ## Visualizing the results
 
-Since this is a CG-MD parameterization exercise, let's look at the three-bead system being parameterized by my agent, and how the final parameterization behaves in an actual CG-MD simulation. 
+Since this is a CG-MD parameterization exercise, let's look at the three-bead system being parameterized by the different agents, and how the final parameterization behaves in an actual CG-MD simulation. 
 
 Looking at the three-bead system at its first, middle, and final proposals, it's actually the level of cohesion among beads that changes: bead size moves by under 20%, while well depth moves by up to 75% (i.e., the visible change is the hue rather than the radius of the bead). 
 
@@ -161,7 +161,7 @@ Looking at the three-bead system at its first, middle, and final proposals, it's
   width={672}
 />
 
-Finally, simulating the fitted system over 0, 30, and 60 picoseconds shows a disordered, voided slice with beads exchanging neighbors; this is the behavior of a liquid, not a lattice. It is also visibly too mobile: beads travel 0.29–0.43 nm rms over those 60 ps, about one bead diameter, where a real glycerol molecule would cover some 0.02 nm in the same window [^7] — the fitted models diffuse one to two hundred times too fast. This is a limitation of this study, where I'm focusing on the agentic setup to parameterize a glycerol stub three-bead system.
+Finally, simulating the fitted system over 0, 30, and 60 picoseconds shows a disordered, voided slice with beads exchanging neighbors; this is the behavior of a liquid, not a lattice. It is also visibly too mobile: beads travel 0.29–0.43 nm rms over those 60 ps, about one bead diameter, where a real glycerol molecule would cover some 0.02 nm in the same window[^6] — the fitted models diffuse one to two hundred times too fast. This is a limitation of this study, where I'm focusing on the agentic setup to parameterize a glycerol stub three-bead system.
 
 <Image
   src="/bayesopt-for-md-simulators/glycerol-real-slab3d.webp"
@@ -195,8 +195,7 @@ Finally, as I've noted along this write-up, two things need to be swapped out in
 
 [^1]: Vibrating-tube densimetry, sample dried to 0.07 mass% water — Prieto et al., *J. Chem. Thermodyn.* 101 (2016); values read from the NIST TRC ThermoML deposition. Eight independent literature values cluster at 1257.8–1259.1 kg/m³.
 [^2]: Bastos et al., *J. Chem. Thermodyn.* 20 (1988); 91.7 ± 0.9 kJ/mol by direct vaporization calorimetry.
-[^3]: Verevkin et al., *Fluid Phase Equilib.* 397 (2015); 90.5 ± 0.3 kJ/mol from evaluated vapour pressures.
+[^3]: Verevkin et al., *Fluid Phase Equilib.* 397 (2015); 90.5 ± 0.3 kJ/mol from evaluated vapor pressures.
 [^4]: Frozen geometry parameters: bond length 0.3126 nm; angle 124.7°; force constants 2140 kJ/mol/nm² (bond), 38.6 kJ/mol (angle); timestep 20 fs; thermostat coupling 1.0 ps.
-[^5]: Claude Opus 5 was among the leading models on general reasoning leaderboards at the time of these runs; Artificial Analysis, 23 August 2026.
-[^6]: Twelve seeds (0–11) per agent. Bayesian optimization, the feasibility model and the LLM warm-start each ran 40 simulations per seed; the LLM ran 20.
-[^7]: Estimated from viscosity: 0.934 Pa·s at 298.15 K (Segur and Oberstar, *Ind. Eng. Chem.* 43 (1951) 2117–2120) gives D ≈ 9 × 10⁻¹³ m² s⁻¹ by Stokes–Einstein at a 0.25 nm radius, or ~0.02 nm in 60 ps; the fitted champions sit at 0.9–2.3 × 10⁻¹⁰ m² s⁻¹. Direct measurements of bulk glycerol self-diffusion by PFG-NMR are reported in D'Agostino, Mitchell, Gladden and Mantle, *J. Phys. Chem. C* 116 (2012) 8975–8982, and its temperature dependence in Tomlinson, *Mol. Phys.* 25 (1973) 735–738.
+[^5]: Twelve seeds (0–11) per agent. Bayesian optimization, the feasibility model and the LLM warm-start each ran 40 simulations per seed; the LLM ran 20.
+[^6]: Estimated from viscosity: 0.934 Pa·s at 298.15 K (Segur and Oberstar, *Ind. Eng. Chem.* 43 (1951) 2117–2120) gives D ≈ 9 × 10⁻¹³ m² s⁻¹ by Stokes–Einstein at a 0.25 nm radius, or ~0.02 nm in 60 ps; the fitted champions sit at 0.9–2.3 × 10⁻¹⁰ m² s⁻¹. Direct measurements of bulk glycerol self-diffusion by PFG-NMR are reported in D'Agostino, Mitchell, Gladden and Mantle, *J. Phys. Chem. C* 116 (2012) 8975–8982, and its temperature dependence in Tomlinson, *Mol. Phys.* 25 (1973) 735–738.
