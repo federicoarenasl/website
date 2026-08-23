@@ -58,7 +58,7 @@ NOISE_FLOOR = 0.0248
 # marginally better only because BO does unusually badly there.
 SEED = 7
 ARM_SPECS = [
-    ("Bayesian optimisation", "glycerol_real", VIOLET),
+    ("Bayesian Optimization (BO)", "glycerol_real", VIOLET),
     ("BO + feasibility model", "glycerol_real_gpfeas", AQUA),
     ("BO + LLM warm-start", "glycerol_real_llmwarm", BLUE),
     ("LLM", "glycerol_real_llm", ORANGE),

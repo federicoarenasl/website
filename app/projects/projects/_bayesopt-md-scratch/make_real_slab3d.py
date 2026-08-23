@@ -63,7 +63,7 @@ BEADS_PER_MOLECULE = 3
 
 
 def slab_cuboid_edges(side: float, thickness: float) -> list[np.ndarray]:
-    """Edges of a box-footprint slab, centred on the origin."""
+    """Edges of a box-footprint slab, centered on the origin."""
     hx, hz = side / 2.0, thickness / 2.0
     corners = np.array([[x, y, z] for x in (-hx, hx) for y in (-hx, hx)
                         for z in (-hz, hz)])

@@ -15,7 +15,7 @@ things do:
 
 There is no ghost, because on an experimental target there is no true parameter
 set to draw. The gauges take its place: measured density and enthalpy of
-vaporisation against the values real glycerol has.
+vaporization against the values real glycerol has.
 
     python3 make_real_bead_3d.py
 """
@@ -61,7 +61,7 @@ CORE_FRACTION = 0.26
 # from each arm's own median it is where all four behave most typically at once.
 SEED = 7
 ARM_SPECS = [
-    ("Bayesian optimisation", "glycerol_real", VIOLET),
+    ("Bayesian Optimization (BO)", "glycerol_real", VIOLET),
     ("BO + feasibility model", "glycerol_real_gpfeas", AQUA),
     ("BO + LLM warm-start", "glycerol_real_llmwarm", BLUE),
     ("LLM", "glycerol_real_llm", ORANGE),
@@ -165,7 +165,7 @@ def gauge(ax, step, key, target, lo, hi, label, unit, colour):
     ax.axvline(target, color=CRITICAL, lw=1.6, zorder=3)
     ax.text(lo, 1.3, f"{label}", ha="left", va="bottom", fontsize=12,
             color=INK_SECONDARY)
-    # Right-aligned rather than centred on the target line: centred, it sat on
+    # Right-aligned rather than centered on the target line: centered, it sat on
     # top of the measured value's label whenever the fit was close -- which is
     # exactly when the reader most wants to compare the two numbers.
     ax.text(hi, 1.3, f"target {target:g} {unit}", ha="right", va="bottom",

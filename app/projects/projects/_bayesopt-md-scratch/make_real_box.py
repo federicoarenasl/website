@@ -63,7 +63,7 @@ BEAD_SCALE = 0.55          # drawn radius as a fraction of sigma/2
 # over which beads diffuse a few tenths of a nanometre -- visible at this scale.
 TRAJECTORY_EVERY = 60
 ARM_SPECS = [
-    ("Bayesian optimisation", "glycerol_real", VIOLET),
+    ("Bayesian Optimization (BO)", "glycerol_real", VIOLET),
     ("BO + feasibility model", "glycerol_real_gpfeas", AQUA),
     ("BO + LLM warm-start", "glycerol_real_llmwarm", BLUE),
     ("LLM", "glycerol_real_llm", ORANGE),

@@ -1,4 +1,4 @@
-"""Animated GIFs of Bayesian-optimisation runs walking the loss landscape.
+"""Animated GIFs of Bayesian-optimization runs walking the loss landscape.
 
 Run with a python that has matplotlib + pandas + Pillow:
 
