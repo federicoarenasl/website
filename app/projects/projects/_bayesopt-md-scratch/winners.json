@@ -1,0 +1,50 @@
+{
+  "1_penalty": {
+    "agent": "gp",
+    "n_steps": 35,
+    "n_initial_random": 10,
+    "acq_func": "gp_hedge",
+    "unstable_penalty": 0.7,
+    "free_rejection": false
+  },
+  "2_acq": {
+    "agent": "gp",
+    "n_steps": 35,
+    "n_initial_random": 10,
+    "acq_func": "gp_hedge",
+    "unstable_penalty": 0.7,
+    "free_rejection": false
+  },
+  "3_warmup": {
+    "agent": "gp",
+    "n_steps": 35,
+    "n_initial_random": 10,
+    "acq_func": "gp_hedge",
+    "unstable_penalty": 0.7,
+    "free_rejection": false
+  },
+  "4_free_rejection": {
+    "agent": "gp",
+    "n_steps": 35,
+    "n_initial_random": 10,
+    "acq_func": "gp_hedge",
+    "unstable_penalty": 0.7,
+    "free_rejection": true
+  },
+  "final": {
+    "agent": "gp",
+    "n_steps": 35,
+    "n_initial_random": 10,
+    "acq_func": "gp_hedge",
+    "unstable_penalty": 0.7,
+    "free_rejection": true
+  },
+  "production": {
+    "agent": "gp",
+    "n_steps": 50,
+    "n_initial_random": 10,
+    "acq_func": "gp_hedge",
+    "unstable_penalty": 0.7,
+    "free_rejection": true
+  }
+}

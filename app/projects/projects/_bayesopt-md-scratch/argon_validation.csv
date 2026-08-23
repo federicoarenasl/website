@@ -1,0 +1,6 @@
+arm,reported_best_loss,revalidated_loss,optimism,n_seeds
+Random search,0.4032,0.4029,-0.0003,10
+GP (untuned),0.1335,0.1644,0.0308,10
+"GP (tuned), random warm-up",0.174,0.1318,-0.0422,10
+"GP (tuned), LLM warm-up",0.086,0.0767,-0.0093,10
+LLM only (no surrogate),0.0146,0.0445,0.0299,10

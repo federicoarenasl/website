@@ -1,5 +1,6 @@
 // Import global CSS styles for the entire application
 import './global.css'
+import 'katex/dist/katex.min.css'
 import type { Metadata } from 'next'
 // Import Geist font families for consistent typography
 import { GeistSans } from 'geist/font/sans'

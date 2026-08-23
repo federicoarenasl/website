@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import React from 'react'
 import { CodeBlock, InlineCode } from '../ui/code-block'
 import { ImageLightbox } from '../ui/image-lightbox'
@@ -92,11 +94,28 @@ function Table({ data }) {
  * - Internal links (starting with '/') use Next.js Link component
  * - Hash links (starting with '#') use regular anchor tags
  * - External links open in new tab with security attributes
+ * - Footnote back-references render the word "back" in place of remark-gfm's
+ *   default return-arrow glyph, which reads as an emoji on several platforms
  * @param {Object} props - Link props including href and children
  * @returns {JSX.Element} Appropriate link element based on href type
  */
 function CustomLink(props) {
   let href = props.href
+
+  // Footnote back-reference - remark-gfm supplies the arrow as the link's only
+  // child, so the label is replaced rather than styled
+  if (props['data-footnote-backref'] !== undefined) {
+    // One backref is emitted per citation, so a footnote cited twice renders
+    // "back back". Repeats are the ones whose target carries a suffix
+    // (fnref-1-2, fnref-1-3, ...); only the first is kept.
+    if (/#user-content-fnref-\d+-\d+$/.test(href)) return null
+
+    return (
+      <a {...props} className="footnote-backref">
+        back
+      </a>
+    )
+  }
 
   // Internal links - use Next.js Link for client-side navigation
   if (href.startsWith('/')) {
@@ -300,7 +319,20 @@ function createHeading(level) {
  */
 const serializeOptions = {
   blockJS: false,
-  mdxOptions: { remarkPlugins: [remarkGfm] },
+  // remarkMath parses $inline$ and $$block$$; rehypeKatex renders them to HTML
+  // at build time, so no client-side maths runtime ships. KaTeX's stylesheet is
+  // imported once in app/layout.tsx — without it the markup renders unstyled.
+  // remarkMath parses $inline$ and $$block$$; rehypeKatex renders them to HTML
+  // at build time, so no client-side maths runtime ships. KaTeX's stylesheet is
+  // imported once in app/layout.tsx — without it the markup renders unstyled,
+  // with the hidden MathML fallback showing as a duplicate.
+  //
+  // Deliberately KaTeX's default HTML output rather than MathML: MathML would
+  // allow a different maths font, but its rendering was judged worse here.
+  mdxOptions: {
+    remarkPlugins: [remarkGfm, remarkMath],
+    rehypePlugins: [rehypeKatex],
+  },
 }
 
 /**

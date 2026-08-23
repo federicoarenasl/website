@@ -1,0 +1,8 @@
+arm,median_best_loss,p_seeds_reach_threshold,p_unstable,median_cost_to_loss_threshold,median_steps_to_loss_threshold,p_blowup_violations,p_thermostat_violations,p_min_image_violations,epsilon_error_pct,sigma_error_pct,bond_length_nm_error_pct,bond_k_error_pct,angle_deg_error_pct,angle_k_error_pct,mean_param_error_pct
+Random search,0.9264,0.0,0.63,nan,nan,0.54,0.0,0.09,26.63,9.28,16.59,85.19,9.6,84.77,43.77
+GP (untuned),0.5956,0.0,0.3367,nan,nan,0.2433,0.0,0.0933,24.84,14.36,10.2,15.47,9.44,144.28,40.39
+"GP (tuned), random warm-up",0.8275,0.0,0.7533,nan,nan,0.56,0.0,0.1933,32.81,9.27,17.79,49.61,7.82,100.93,45.42
+"BO, multi-output + constraints",0.5613,0.0,0.3933,nan,nan,0.3933,0.0,0.0,24.59,14.6,29.07,100.67,5.15,86.51,47.22
+"GP (tuned), LLM warm-up",0.202,0.0,0.4467,nan,nan,0.2967,0.0,0.15,10.78,1.81,4.03,11.21,2.33,23.06,12.08
+LLM only (no surrogate),0.1247,0.3333,0.0,0.82,17.0,0.0,0.0,0.0,8.39,0.81,4.16,11.21,2.0,19.17,7.24
+"LLM only, targets withheld",0.3352,0.0,0.0,nan,nan,0.0,0.0,0.0,9.58,6.81,8.83,16.82,3.77,9.33,13.56
