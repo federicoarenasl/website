@@ -4,9 +4,9 @@ publishedAt: '2026-08-17'
 summary: 'From Bayesian Optimization to LLMs, exploring the potential of AI agents for parameterizing molecular dynamics biomolecules.'
 ---
 
-Coarse-Grained Molecular Dynamics (CG-MD)[^1] lets scientists understand the behavior of complex molecular systems through the relationship between the behavior of the molecular structure of the system and its end properties, adding a higher-resolution level of understanding that might otherwise be expensive to obtain in a wet lab setting[^1]. This is a promising alternative especially in fields that deal with large molecular structures, such as drug design and materials science.
+Coarse-Grained Molecular Dynamics (CG-MD)[^1] lets scientists understand the behavior of complex molecular systems through the relationship between the behavior of the molecular structure of the system and its end properties, adding a higher-resolution level of understanding that might otherwise be expensive to obtain in a wet lab setting. This is a promising alternative especially in fields that deal with large molecular structures, such as drug design and materials science.
 
-CG-MD, however, still requires human expertise to set up new simulations at multiple stages of the pipeline: (1) parameterizing the individual molecules, (2) setting up the simulation, (2) running the simulation, and (3) interpreting the results. 
+CG-MD, however, still requires human expertise to set up new simulations at multiple stages of the pipeline: (1) parameterizing the individual molecules, (2) setting up the simulation, (3) running the simulation, and (4) interpreting the results. 
 
 This post investigates the utility of using agents to do (1) directly from experimental measurements. The core idea being that for unknown molecules, teams should be able to take a measurement of the new compound and use an agent to parameterize the molecules in CG-MD grounded in experimental data, ready for downstream use.
 
@@ -18,7 +18,7 @@ To keep things computationally feasible, I chose the common biomolecule glycerol
 
 > Note: All other parameters (bond length, angle, bonded force constants, etc.) were left at their reported values[^5]. 
 
-Since the intention here is to minimally demonstrate parameterization from experimentally validated data points, the optimization problem is fitting the starting molecule to match the experimental density. 
+Since the intention here is to minimally demonstrate parameterization from experimentally validated data points, the optimization problem is fitting the starting molecule to match the experimental density and vaporization enthalpy. 
 
 This can be formally expressed by the following loss function:
 
