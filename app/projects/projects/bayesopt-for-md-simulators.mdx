@@ -1,22 +1,36 @@
 ---
 title: 'Using Agents to Parameterize Molecular Dynamics Biomolecules'
 publishedAt: '2026-08-17'
-summary: 'From Bayesian Optimization to LLMs, exploring the potential of agents for parameterizing molecular dynamics biomolecules.'
+summary: 'From Bayesian Optimization to LLMs, exploring the potential of AI agents for parameterizing molecular dynamics biomolecules.'
 ---
 
-Coarse-Grained Molecular Dynamics (CG-MD) offers the possibility of modeling complex systems that might otherwise be impossible to simulate via finer-grained methods such as DFT and others. The key issue, however, is that the coarser we get, the more we care about larger, often new molecular structures that have never been parameterized or set up before. We are left to the mercy of tuning things by hand through trial and error. This is less than ideal; it couples CG-MD parameterization to a human expert, which is often (1) hard to reproduce and (2) slow.
+Coarse-Grained Molecular Dynamics (CG-MD)[^1] lets scientists understand the behavior of complex molecular systems through the relationship between the behavior of the molecular structure of the system and its end properties, adding a higher-resolution level of understanding that might otherwise be expensive to obtain in a wet lab setting[^1]. This is a promising alternative especially in fields that deal with large molecular structures, such as drug design and materials science.
 
-In this post, I want to explore, through a minimal example, the implementation of an agentic framework to parameterize a biomolecule for CG-MD simulation straight from experimental measurements. The idea is that for unknown compounds, teams should be able to take a measurement of the new compound and use an agent to parameterize the CG-MD simulation to these measurements, thus resulting in a usable CG-MD parameterization grounded in experimental data.
+CG-MD, however, still requires human expertise to set up new simulations at multiple stages of the pipeline: (1) parameterizing the individual molecules, (2) setting up the simulation, (2) running the simulation, and (3) interpreting the results. 
+
+This post investigates the utility of using agents to do (1) directly from experimental measurements. The core idea being that for unknown molecules, teams should be able to take a measurement of the new compound and use an agent to parameterize the molecules in CG-MD grounded in experimental data, ready for downstream use.
 
 ## Optimization goal
-To keep things computationally feasible, I chose the common biomolecule glycerol and decided to parameterize only the three Lennard-Jones terms — **bead size** (σ, ranging from 0.28 to 0.45 nm), **well depth** (ε, ranging from 1 to 8 kJ/mol), and **interaction cutoff** (ranging from 0.90 to 1.20 nm) — using two experimentally measured properties: the density of anhydrous glycerol at atmospheric pressure and 298.15 K (the temperature at which it was recorded[^1]), and its enthalpy of vaporization [^2] [^3]. All other parameters (bond length, angle, bonded force constants, etc.) were left at their literature or standard values [^4]. 
 
-Since the intention here is to demonstrate parameterization minimally from experimentally validated data points, the optimization problem is fitting the starting molecule to match the experimental density (1258.4 ± 0.86 kg/m³ at 298.15 K)[^1] and enthalpy of vaporization (91 ± 1 kJ/mol)[^2] [^3]. This can be formally expressed by the following loss function:
+To keep things computationally feasible, I chose the common biomolecule glycerol and decided to parameterize only the three Lennard-Jones terms[^2] using two experimentally measured properties found in the scientific literature:
+1. The density of glycerol at atmospheric pressure and a set temperature[^3]: 1258.4 ± 0.86 kg/m³.
+2. The enthalpy of vaporization[^4] of glycerol: 91 ± 1 kJ/mol. 
+
+> Note: All other parameters (bond length, angle, bonded force constants, etc.) were left at their reported values[^5]. 
+
+Since the intention here is to minimally demonstrate parameterization from experimentally validated data points, the optimization problem is fitting the starting molecule to match the experimental density. 
+
+This can be formally expressed by the following loss function:
 
 $$
 \text{loss} = \frac{1}{2} \left| \frac{\rho - \rho^*}{\rho^*} \right| + \frac{1}{2} \left| \frac{\Delta H_{\mathrm{vap}} - \Delta H_{\mathrm{vap}}^*}{\Delta H_{\mathrm{vap}}^*} \right|
 $$
 
+where:
+- $\rho$ is the simulated density of the system, and $\rho^*$ is the target (experimental) density.
+- $\Delta H_{\mathrm{vap}}$ is the simulated enthalpy of vaporization, and $\Delta H_{\mathrm{vap}}^*$ is the target (experimental) enthalpy of vaporization.
+
+Both terms are weighted equally which means that the agent is penalized equally for missing the correct density or the correct enthalpy of vaporization.
 
 
 ## The simulator
@@ -48,11 +62,13 @@ def run_md_simulation(p: dict[str, float], seed: int | None = None) -> float:
 
 ```
 
-> A simple extension here is to swap out my custom simulator for GROMACS or LAMMPS. I will update this blog post to use a standard simulator in the future.
+> Note: A simple extension here is to swap out my custom simulator for [GROMACS](https://www.gromacs.org/) or [LAMMPS](https://www.lammps.org/#gsc.tab=0).
 
 ## The agentic framework
 
-I'm aiming to have a portfolio of agents I can compare against each other. I want to compare (1) whether they are able to converge during minimization of the loss, and (2) how efficiently and reliably they are able to do this. This requires a shared surface from which I can fork various implementations.
+The agent framework should enable having multiple agents that can be compared against each other. I want to compare (1) whether they are able to converge during minimization of the loss, and (2) how efficiently and reliably they are able to do this. 
+
+This requires a shared surface from which I can fork various implementations:
 
 ```python
 class BaseAgent:
@@ -89,15 +105,14 @@ class BaseAgent:
         return summary
 ```
 
-Now, as you can already see, the agentic surface above does not imply LLMs. This is intentional, to make sure the portfolio of agents also contains simpler paradigms such as Bayesian Optimization (BO), building in sophistication up to using LLMs, specifically Claude Opus 5.
+Now, as you can already see, the agentic surface above does not imply LLMs. This is intentional, making sure simpler paradigms such as Bayesian Optimization (BO) can be benchmarked, building in sophistication up to using LLMs.
 
 This is the agentic spectrum I decided to test:
-- **BO**: one Gaussian Process over the scalar loss.
-- **BO plus a feasibility model**: the same GP on the loss, fitted only on runs that
-survived, plus a second GP over a 0/1 crash label. The latter improves BO's ability to navigate the feasibility threshold.
-- **BO with an LLM warm-start**: seeds the GP/Bayesian optimizer with points proposed by the LLM before switching to standard Bayesian optimization. This is an attempt to leverage the LLM's prior to shortcut the BO's exploration cold-start.
-- **LLM (Claude Opus 5)**: the LLM proposes every parameter set, seeing the target values, the
-bounds, and each previous run's parameters with its loss or its failure mode.
+- **BO**: A basic Gaussian Process (GP) optimizing over the scalar loss by suggesting the next parameterization.
+- **BO plus a feasibility model**: The same GP as above, this time I'm fitting it only on runs that
+did not crash (i.e. blow up), and delegate to a second GP to predict when a run may or may not crash. The latter should improve BO's ability to navigate the feasibility threshold.
+- **BO with an LLM warm-start**: I hypothesize that the LLM's prior can save significant exploration runs. So in this case, the LLM seeds BO before switching to standard Bayesian optimization.
+- **LLM (Claude Opus 5)**: Finally, we hand the driving wheel to an LLM that can see the target experimental data, and can propose new parameters based on the scalar loss.
 
 The four agents can branch out from the above abstraction by swapping out the policy where needed:
 
@@ -133,9 +148,9 @@ class LlmAgent(BaseAgent):
         super().__init__(config, policy)
 ```
 
-## Optimizing the biomolecule
+## Parameterizing the biomolecule
 
-Running the portfolio of agents over many simulations and many random seeds[^5] gives me the behavior shown below, which shows the representative behavior across the settings. The plot below shows a few things in one animation to understand (1) the optimization landscape across bead size and well-depth, (2) the trajectory taken by each agent, and (3) overall performance of each agent as more simulations are accrued. 
+Running the portfolio of agents over many simulations and many random seeds[^6] gives me the behavior shown below, which shows the representative behavior across the settings. The plot below shows a few things in one animation to understand (1) the optimization landscape across bead size and well-depth, (2) the trajectory taken by each agent, and (3) overall performance of each agent as more simulations are accrued. 
 
 > Notice that the simulation can blow up, meaning that the parameterization becomes unstable; this feasibility region is denoted by a gray background with a grid of "x" markers.
 
@@ -161,7 +176,7 @@ Looking at the three-bead system at its first, middle, and final proposals, it's
   width={672}
 />
 
-Finally, simulating the fitted system over 0, 30, and 60 picoseconds shows a disordered, voided slice with beads exchanging neighbors; this is the behavior of a liquid, not a lattice. It is also visibly too mobile: beads travel 0.29–0.43 nm rms over those 60 ps, about one bead diameter, where a real glycerol molecule would cover some 0.02 nm in the same window[^6] — the fitted models diffuse one to two hundred times too fast. This is a limitation of this study, where I'm focusing on the agentic setup to parameterize a glycerol stub three-bead system.
+Finally, simulating the fitted system over 0, 30, and 60 picoseconds shows a disordered, voided slice with beads exchanging neighbors; this is the behavior of a liquid, not a lattice. It is also visibly too mobile: beads travel 0.29–0.43 nm rms over those 60 ps, about one bead diameter, where a real glycerol molecule would cover some 0.02 nm in the same window[^7] — the fitted models diffuse one to two hundred times too fast. This is a limitation of this study, where I'm focusing on the agentic setup to parameterize a glycerol stub three-bead system.
 
 <Image
   src="/bayesopt-for-md-simulators/glycerol-real-slab3d.webp"
@@ -193,9 +208,10 @@ Finally, as I've noted along this write-up, two things need to be swapped out in
 
 **Disclaimer: I used Claude Opus 5 to collect glycerol's experimental data from the academic literature as well as to build the purpose-built glycerol simulator.**
 
-[^1]: Vibrating-tube densimetry, sample dried to 0.07 mass% water — Prieto et al., *J. Chem. Thermodyn.* 101 (2016); values read from the NIST TRC ThermoML deposition. Eight independent literature values cluster at 1257.8–1259.1 kg/m³.
-[^2]: Bastos et al., *J. Chem. Thermodyn.* 20 (1988); 91.7 ± 0.9 kJ/mol by direct vaporization calorimetry.
-[^3]: Verevkin et al., *Fluid Phase Equilib.* 397 (2015); 90.5 ± 0.3 kJ/mol from evaluated vapor pressures.
-[^4]: Frozen geometry parameters: bond length 0.3126 nm; angle 124.7°; force constants 2140 kJ/mol/nm² (bond), 38.6 kJ/mol (angle); timestep 20 fs; thermostat coupling 1.0 ps.
-[^5]: Twelve seeds (0–11) per agent. Bayesian optimization, the feasibility model and the LLM warm-start each ran 40 simulations per seed; the LLM ran 20.
-[^6]: Estimated from viscosity: 0.934 Pa·s at 298.15 K (Segur and Oberstar, *Ind. Eng. Chem.* 43 (1951) 2117–2120) gives D ≈ 9 × 10⁻¹³ m² s⁻¹ by Stokes–Einstein at a 0.25 nm radius, or ~0.02 nm in 60 ps; the fitted champions sit at 0.9–2.3 × 10⁻¹⁰ m² s⁻¹. Direct measurements of bulk glycerol self-diffusion by PFG-NMR are reported in D'Agostino, Mitchell, Gladden and Mantle, *J. Phys. Chem. C* 116 (2012) 8975–8982, and its temperature dependence in Tomlinson, *Mol. Phys.* 25 (1973) 735–738.
+[^1]: Coarse-Grained Molecular Dynamics (CG-MD) is a simulation approach that reduces the number of degrees of freedom by grouping multiple atoms into "beads," enabling studies of large biomolecular systems over longer timescales. For more details, see [CG-MD overview](https://en.wikipedia.org/wiki/Coarse-grained_modeling_of_proteins).
+[^2]: The Lennard-Jones terms parameterized here are bead size (σ, from 0.28 to 0.45 nm), well depth (ε, from 1 to 8 kJ/mol), and the interaction cutoff (0.90–1.20 nm).
+[^3]: Vibrating-tube densimetry, sample dried to 0.07 mass% water — Prieto et al., *J. Chem. Thermodyn.* 101 (2016); values read from the NIST TRC ThermoML deposition. Eight independent literature values cluster at 1257.8–1259.1 kg/m³.
+[^4]: Bastos et al., *J. Chem. Thermodyn.* 20 (1988) report 91.7 ± 0.9 kJ/mol by direct vaporization calorimetry. Verevkin et al., *Fluid Phase Equilib.* 397 (2015) report 90.5 ± 0.3 kJ/mol from evaluated vapor pressures.
+[^5]: Frozen geometry parameters: bond length 0.3126 nm; angle 124.7°; force constants 2140 kJ/mol/nm² (bond), 38.6 kJ/mol (angle); timestep 20 fs; thermostat coupling 1.0 ps.
+[^6]: Twelve seeds (0–11) per agent. BO, BO + feasibility model and BO + LLM warm-start each ran 40 simulations per seed, while the LLM ran 20.
+[^7]: Estimated from viscosity: 0.934 Pa·s at 298.15 K (Segur and Oberstar, *Ind. Eng. Chem.* 43 (1951) 2117–2120) gives D ≈ 9 × 10⁻¹³ m² s⁻¹ by Stokes–Einstein at a 0.25 nm radius, or ~0.02 nm in 60 ps; the fitted champions sit at 0.9–2.3 × 10⁻¹⁰ m² s⁻¹. Direct measurements of bulk glycerol self-diffusion by PFG-NMR are reported in D'Agostino, Mitchell, Gladden and Mantle, *J. Phys. Chem. C* 116 (2012) 8975–8982, and its temperature dependence in Tomlinson, *Mol. Phys.* 25 (1973) 735–738.
