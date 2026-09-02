@@ -5,7 +5,7 @@ export default function robots() {
     rules: [
       {
         userAgent: '*',
-        disallow: ['/cv', '/cv.pdf'],
+        disallow: ['/cv', '/cv-science.pdf', '/cv-agents.pdf'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
