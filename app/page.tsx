@@ -15,13 +15,13 @@ export default function Page() {
         >
           Materiom
         </a>
-        {`, where I build machine learning systems and closed-loop pipelines to accelerate scientific discovery across bio-based materials. My work focuses on bridging high-throughput in-silico simulations, geometric deep learning, and automated physical lab experimentation.`}
+        {`, where I build machine learning and agentic systems to accelerate scientific discovery in the materials sector. My work focuses on agentic scientific orchestration, geometric deep learning, and software engineering.`}
       </p>
       <p className="mb-4">
-        {`Previously, I built autonomous vehicle validation platforms, synthetic data engines using game engines, and scalable ML infrastructure at early-stage startups.`}
+        {`Previously, I was part of early-stage startups building autonomous vehicle validation platforms, synthetic data engines, and scalable ML infrastructure.`}
       </p>
       <p className="mb-4">
-        {`Outside of engineering, I find balance through running, philosophy, and playing guitar.`}
+        {`Outside work, I find balance through running, cycling, philosophy, and playing guitar.`}
       </p>
       <p className="mb-4">
         {`Based in London. Feel free to reach out.`}
