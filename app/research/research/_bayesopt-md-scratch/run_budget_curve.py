@@ -29,7 +29,7 @@ enters the analysis as a fixed reference at 30 simulations.
 
     cd /Users/federico/Documents/personal/code/agentic-optimiser
     MD_ENGINE=glycerol OMP_NUM_THREADS=1 ./.venv/bin/python \
-        /Users/federico/Documents/personal/code/website/app/projects/projects/_bayesopt-md-scratch/run_budget_curve.py
+        /Users/federico/Documents/personal/code/website/app/research/research/_bayesopt-md-scratch/run_budget_curve.py
 """
 import csv
 import json

@@ -14,7 +14,7 @@ projections cannot give -- nothing is discarded, and it answers the question
 the figures are really about: did the arm approach the answer, or just find a
 low loss somewhere else?
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_glycerol_pca.py
+    python3 app/research/research/_bayesopt-md-scratch/make_glycerol_pca.py
 """
 
 import math

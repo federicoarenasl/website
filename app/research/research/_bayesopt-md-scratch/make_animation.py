@@ -2,7 +2,7 @@
 
 Run with a python that has matplotlib + pandas + Pillow:
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_animation.py
+    python3 app/research/research/_bayesopt-md-scratch/make_animation.py
 
 Writes into public/bayesopt-for-md-simulators/:
   trajectory.gif            one tuned GP run (the shared seed)

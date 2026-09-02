@@ -13,7 +13,7 @@ its own seven other parameters, so the field is the landscape the optimiser
 would have faced had it got everything else exactly right. The markers show
 where each arm looked; the field shows what it was looking for.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_glycerol_landscape.py
+    python3 app/research/research/_bayesopt-md-scratch/make_glycerol_landscape.py
 """
 
 import math

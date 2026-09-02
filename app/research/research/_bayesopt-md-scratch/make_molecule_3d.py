@@ -15,7 +15,7 @@ mplot3d resolves depth per-artist rather than per-pixel, so intersecting
 surfaces are drawn in the wrong order; painting shaded discs back to front is
 both correct for spheres and far faster.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_molecule_3d.py [arm]
+    python3 app/research/research/_bayesopt-md-scratch/make_molecule_3d.py [arm]
 """
 
 import csv

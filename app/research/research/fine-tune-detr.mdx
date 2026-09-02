@@ -23,7 +23,7 @@ I'll use the _"HomebrewedDB: RGB-D Dataset for 6D Pose Estimation of 3D Objects"
 
 The pipeline has two main phases: (1) preparing a real-world validation set and generating a synthetic training set in Blender, and (2) fine-tuning DETR on the synthetic dataset and evaluate it on the real-world dataset. Both datasets are stored as HuggingFace imagefolder datasets and pushed to the Hub for easy interoperability.
 
-A more detailed, step-by-step tutorial is available in two parts: [Part 1 — Generate data using Blender](/projects/fine-tune-detr-1) and [Part 2 — Fine-tune DETR](/projects/fine-tune-detr-2), this includes all code details for reproducibility.
+A more detailed, step-by-step tutorial is available in two parts: [Part 1 — Generate data using Blender](/research/fine-tune-detr-1) and [Part 2 — Fine-tune DETR](/research/fine-tune-detr-2), this includes all code details for reproducibility.
 
 ## Validation data and synthetic data generation
 
@@ -197,7 +197,7 @@ Per-class mAP makes that clear: Toy Cow and Stapler lag behind. That suggests fo
 
 This blogpost demonstrated went from a concrete real-world object detection task to generating synthetic training data in Blender with sdg-engine, fine-tuning DETR with HuggingFace, and evaluating on the real-world BOP Homebrew validation set. 
 
-The model generalizes to the target domain and reaches about mAP ≈ 0.67, with clear headroom via better data balance, diversity, and scene quality. I encourage you to try the [full two-part tutorial](/projects/fine-tune-detr-1) and to outperform this baseline — and to share what worked for you!
+The model generalizes to the target domain and reaches about mAP ≈ 0.67, with clear headroom via better data balance, diversity, and scene quality. I encourage you to try the [full two-part tutorial](/research/fine-tune-detr-1) and to outperform this baseline — and to share what worked for you!
 
 > [1] [BOP Benchmark – 6D Object Pose Estimation](https://bop.felk.cvut.cz/home/). If you're working on 6D pose estimation, you'll almost certainly run into BOP. It's the go-to benchmark for comparing methods, with well-defined datasets, metrics, and evaluation scripts.
 

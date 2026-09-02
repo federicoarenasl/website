@@ -7,7 +7,7 @@ type Metadata = {
   summary: string
   image?: string
   github?: string
-  /** When true (or "true" from frontmatter), post is still browsable at /projects/[slug] but omitted from the projects list page. */
+  /** When true (or "true" from frontmatter), post is still browsable at /research/[slug] but omitted from the research list page. */
   hiddenFromList?: boolean | string
 }
 

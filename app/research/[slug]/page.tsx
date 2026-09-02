@@ -2,28 +2,28 @@ import { notFound } from 'next/navigation'
 import { CustomMDX } from 'app/components/mdx/mdx'
 import { Giscus } from 'app/components/giscus'
 // NOTE: Right now this is a duplicate from the blog page,
-// we can handle metadata generation for projects and blog posts separately,
+// we can handle metadata generation for research and blog posts separately,
 // or we can create a shared function to generate metadata for both.
 import { baseUrl } from 'app/sitemap'
 
 import {formatDate, collectMDXData} from 'app/utils'
-import { PATH_TO_PROJECT_MDX } from 'app/sitemap'
+import { PATH_TO_RESEARCH_MDX } from 'app/sitemap'
 
-function getProjects() {
-  return collectMDXData(PATH_TO_PROJECT_MDX)
+function getResearch() {
+  return collectMDXData(PATH_TO_RESEARCH_MDX)
 }
 
 export async function generateStaticParams() {
-  let projects = getProjects()
+  let research = getResearch()
 
-  return projects.map((project) => ({
-    slug: project.slug,
+  return research.map((post) => ({
+    slug: post.slug,
   }))
 }
 
 export function generateMetadata({ params }) {
-  let project = getProjects().find((project) => project.slug === params.slug)
-  if (!project) {
+  let post = getResearch().find((post) => post.slug === params.slug)
+  if (!post) {
     return
   }
 
@@ -32,7 +32,7 @@ export function generateMetadata({ params }) {
     publishedAt: publishedTime,
     summary: description,
     image,
-  } = project.metadata
+  } = post.metadata
   let ogImage = image
     ? image
     : `${baseUrl}/og?title=${encodeURIComponent(title)}`
@@ -45,7 +45,7 @@ export function generateMetadata({ params }) {
       description,
       type: 'article',
       publishedTime,
-      url: `${baseUrl}/projects/${project.slug}`,
+      url: `${baseUrl}/research/${post.slug}`,
       images: [
         {
           url: ogImage,
@@ -61,10 +61,10 @@ export function generateMetadata({ params }) {
   }
 }
 
-export default function Blog({ params }) {
-  let project = getProjects().find((project) => project.slug === params.slug)
+export default function Research({ params }) {
+  let post = getResearch().find((post) => post.slug === params.slug)
 
-  if (!project) {
+  if (!post) {
     notFound()
   }
 
@@ -77,14 +77,14 @@ export default function Blog({ params }) {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
-            headline: project.metadata.title,
-            datePublished: project.metadata.publishedAt,
-            dateModified: project.metadata.publishedAt,
-            description: project.metadata.summary,
-            image: project.metadata.image
-              ? `${baseUrl}${project.metadata.image}`
-              : `/og?title=${encodeURIComponent(project.metadata.title)}`,
-            url: `${baseUrl}/projects/${project.slug}`,
+            headline: post.metadata.title,
+            datePublished: post.metadata.publishedAt,
+            dateModified: post.metadata.publishedAt,
+            description: post.metadata.summary,
+            image: post.metadata.image
+              ? `${baseUrl}${post.metadata.image}`
+              : `/og?title=${encodeURIComponent(post.metadata.title)}`,
+            url: `${baseUrl}/research/${post.slug}`,
             author: {
               '@type': 'Person',
               name: 'My Portfolio',
@@ -93,15 +93,15 @@ export default function Blog({ params }) {
         }}
       />
       <h1 className="title font-semibold text-2xl tracking-tighter">
-        {project.metadata.title}
+        {post.metadata.title}
       </h1>
       <div className="flex justify-between items-center mt-2 mb-8 text-sm">
         <p className="text-sm text-neutral-600">
-          {formatDate(project.metadata.publishedAt)}
+          {formatDate(post.metadata.publishedAt)}
         </p>
       </div>
       <article className="prose">
-        <CustomMDX source={project.content} />
+        <CustomMDX source={post.content} />
       </article>
       <Giscus />
     </section>

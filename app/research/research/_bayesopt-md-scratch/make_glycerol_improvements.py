@@ -14,7 +14,7 @@ are omitted; they have to be chosen well but they are not the force field.
 Faint dots are every proposal, for context. Solid line and rings are the
 improvement path. Diamond is where the arm finished. Star is the answer.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_glycerol_improvements.py
+    python3 app/research/research/_bayesopt-md-scratch/make_glycerol_improvements.py
 """
 
 import math

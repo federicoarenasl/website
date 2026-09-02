@@ -9,7 +9,7 @@ Arms that finish early (the stall guard, or a run that ends short) hold their
 final frame, so the panels stay aligned to a common simulation count rather
 than each running at its own speed.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_glycerol_arms.py
+    python3 app/research/research/_bayesopt-md-scratch/make_glycerol_arms.py
 """
 
 import math

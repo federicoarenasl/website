@@ -2,7 +2,7 @@
 
 Run with a python that has matplotlib + pandas (not the optimiser venv):
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_plots.py
+    python3 app/research/research/_bayesopt-md-scratch/make_plots.py
 
 Reads the CSVs written by generate_data.py and writes SVGs into
 public/bayesopt-for-md-simulators/.

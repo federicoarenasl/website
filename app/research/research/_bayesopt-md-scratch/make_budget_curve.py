@@ -14,7 +14,7 @@ surrogate found its lowest losses furthest from the truth. If that holds at
 150 simulations, these two panels disagree with each other, and that
 disagreement is the honest headline.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_budget_curve.py
+    python3 app/research/research/_bayesopt-md-scratch/make_budget_curve.py
 """
 import math
 import statistics

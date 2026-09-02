@@ -36,10 +36,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# python bytecode from the figure scripts under app/projects/projects/_*-scratch
+# python bytecode from the figure scripts under app/research/research/_*-scratch
 __pycache__/
 *.py[cod]
 
 # regenerable figure caches: make_real_box.py rebuilds these by replaying the
 # recorded champions, so the trajectories do not need to live in git
-app/projects/projects/**/_real_target_runs/
+app/research/research/**/_real_target_runs/

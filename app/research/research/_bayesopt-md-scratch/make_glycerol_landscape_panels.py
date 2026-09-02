@@ -10,7 +10,7 @@ Field and caveat are as in make_glycerol_landscape.py: the other seven
 parameters are held at the hidden reference values, so the minimum sits on the
 answer, and a marker's own loss is not the value of the field beneath it.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_glycerol_landscape_panels.py
+    python3 app/research/research/_bayesopt-md-scratch/make_glycerol_landscape_panels.py
 """
 
 import math

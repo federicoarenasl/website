@@ -18,7 +18,7 @@ So each frame is an honest picture of the candidate molecule: its size, its
 shape, and how much it rattles. The hidden reference is ghosted behind it.
 Crashed proposals are drawn in red -- a shape that could not be simulated.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_molecule_animation.py
+    python3 app/research/research/_bayesopt-md-scratch/make_molecule_animation.py
 """
 
 import csv

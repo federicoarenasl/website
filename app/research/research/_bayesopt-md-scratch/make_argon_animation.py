@@ -4,7 +4,7 @@ Same visual language as the surrogate animations, but the slice is now the two
 constants being recovered — sigma and epsilon — and every point of the
 background field is a real 11-second simulation rather than a formula.
 
-    python3 app/projects/projects/_bayesopt-md-scratch/make_argon_animation.py
+    python3 app/research/research/_bayesopt-md-scratch/make_argon_animation.py
 
 Writes into public/bayesopt-for-md-simulators/:
   argon-trajectory.gif            one tuned GP run
