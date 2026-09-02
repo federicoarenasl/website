@@ -43,3 +43,6 @@ __pycache__/
 # regenerable figure caches: make_real_box.py rebuilds these by replaying the
 # recorded champions, so the trajectories do not need to live in git
 app/research/research/**/_real_target_runs/
+
+# Materiom eval archive used to prep the MAS post; never publish
+app/research/research/_materiom-ai-scratch/
